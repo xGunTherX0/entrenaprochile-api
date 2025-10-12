@@ -2,7 +2,6 @@ import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 # Asumiendo que usas Flask-SQLAlchemy para el ORM
-from flask_sqlalchemy import SQLAlchemy 
 
 # Inicialización de la aplicación
 app = Flask(__name__)
@@ -82,11 +81,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_URI
 # Opcional pero recomendado para producción:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Inicializa tu ORM
-db = SQLAlchemy(app)
+from database.database import db as db_instance
+
+# Inicializa tu ORM (instancia compartida)
+db_instance.init_app(app)
+# Para compatibilidad con el resto del código, exportamos `db`
+db = db_instance
 
 # Importa modelos después de inicializar db para evitar importación circular
-from database.database import Usuario, Cliente
+with app.app_context():
+	from database.database import Usuario, Cliente  # noqa: F401
 
 
 # Asegura que la carpeta database exista cuando uses SQLite en desarrollo

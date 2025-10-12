@@ -1,5 +1,8 @@
 from datetime import datetime
-from backend import db
+from flask_sqlalchemy import SQLAlchemy
+
+# Create SQLAlchemy instance here and initialize it from app with db.init_app(app)
+db = SQLAlchemy()
 
 
 class Usuario(db.Model):

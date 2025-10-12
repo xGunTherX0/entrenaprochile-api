@@ -1,6 +1,7 @@
 import sys
 import os
-from backend import app, db
+from backend import app
+from database.database import db
 
 
 USAGE = '''Usage: python manage.py [create_tables|drop_tables]
