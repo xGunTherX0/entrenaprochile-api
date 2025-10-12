@@ -1,10 +1,15 @@
 import os
 from flask import Flask, jsonify
+from flask_cors import CORS
 # Asumiendo que usas Flask-SQLAlchemy para el ORM
 from flask_sqlalchemy import SQLAlchemy 
 
 # Inicialización de la aplicación
 app = Flask(__name__)
+
+# Habilita CORS para evitar bloqueos desde el frontend (Netlify). En producción
+# deberías restringir el origen a tu dominio (ej: CORS(app, resources={r"/api/*": {"origins": "https://tu-sitio.netlify.app"}})).
+CORS(app)
 
 # --- Lógica de Conexión (el cambio clave) ---
 
