@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 # Asumiendo que usas Flask-SQLAlchemy para el ORM
 from flask_sqlalchemy import SQLAlchemy 
@@ -10,6 +10,55 @@ app = Flask(__name__)
 # Habilita CORS para evitar bloqueos desde el frontend (Netlify). En producción
 # deberías restringir el origen a tu dominio (ej: CORS(app, resources={r"/api/*": {"origins": "https://tu-sitio.netlify.app"}})).
 CORS(app)
+
+from werkzeug.security import generate_password_hash, check_password_hash
+from database.database import Usuario, Cliente
+
+
+@app.route('/api/usuarios/register', methods=['POST'])
+def register_usuario():
+	data = request.get_json() or {}
+	email = data.get('email')
+	nombre = data.get('nombre') or data.get('name') or 'Usuario'
+	password = data.get('password')
+	if not email or not password:
+		return jsonify({'error': 'email and password required'}), 400
+
+	# Verifica si existe
+	existing = Usuario.query.filter_by(email=email).first()
+	if existing:
+		return jsonify({'error': 'user exists'}), 409
+
+	hashed = generate_password_hash(password)
+	user = Usuario(email=email, nombre=nombre, hashed_password=hashed)
+	db.session.add(user)
+	db.session.commit()
+
+	# Crear entidad Cliente por defecto
+	cliente = Cliente(usuario_id=user.id)
+	db.session.add(cliente)
+	db.session.commit()
+
+	return jsonify({'message': 'user created', 'id': user.id}), 201
+
+
+@app.route('/api/usuarios/login', methods=['POST'])
+def login_usuario():
+	data = request.get_json() or {}
+	email = data.get('email')
+	password = data.get('password')
+	if not email or not password:
+		return jsonify({'error': 'email and password required'}), 400
+
+	user = Usuario.query.filter_by(email=email).first()
+	if not user:
+		return jsonify({'error': 'invalid credentials'}), 401
+
+	if not check_password_hash(user.hashed_password, password):
+		return jsonify({'error': 'invalid credentials'}), 401
+
+	return jsonify({'message': 'ok', 'user_id': user.id}), 200
+
 
 # --- Lógica de Conexión (el cambio clave) ---
 
