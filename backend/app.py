@@ -12,7 +12,6 @@ app = Flask(__name__)
 CORS(app)
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.database import Usuario, Cliente
 
 
 @app.route('/api/usuarios/register', methods=['POST'])
@@ -85,6 +84,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Inicializa tu ORM
 db = SQLAlchemy(app)
+
+# Importa modelos después de inicializar db para evitar importación circular
+from database.database import Usuario, Cliente
 
 
 # Asegura que la carpeta database exista cuando uses SQLite en desarrollo

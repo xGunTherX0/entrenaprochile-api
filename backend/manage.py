@@ -27,13 +27,14 @@ def create_user(email: str, password: str, nombre: str = 'Usuario'):
     except Exception:
         pass
 
+    from werkzeug.security import generate_password_hash
     with app.app_context():
         from database.database import Usuario, Cliente
         existing = Usuario.query.filter_by(email=email).first()
         if existing:
             print('User already exists')
             return
-        hashed = __import__('werkzeug.security').security.generate_password_hash(password)
+        hashed = generate_password_hash(password)
         user = Usuario(email=email, nombre=nombre, hashed_password=hashed)
         db.session.add(user)
         db.session.commit()
