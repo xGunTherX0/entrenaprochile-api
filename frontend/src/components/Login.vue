@@ -68,10 +68,9 @@ export default {
   const role = data.role || 'usuario'
   const nombre = data.nombre || ''
 
-  // Guarda en localStorage (simple session)
-  localStorage.setItem('user_role', role)
-  localStorage.setItem('user_nombre', nombre)
-  localStorage.setItem('user_id', data.user_id)
+  // Guarda en sesión usando helper
+  const auth = (await import('../utils/auth.js')).default
+  auth.setSession({ user_id: data.user_id, role, nombre })
 
         // Redirige según rol
         if (role === 'entrenador') {

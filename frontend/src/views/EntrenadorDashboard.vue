@@ -23,9 +23,8 @@ export default {
   name: 'EntrenadorDashboard',
   methods: {
     logout() {
-      localStorage.removeItem('user_role')
-      localStorage.removeItem('user_id')
-      localStorage.removeItem('user_nombre')
+      const auth = require('../utils/auth.js').default
+      auth.clearSession()
       this.$router.push('/')
     }
   }

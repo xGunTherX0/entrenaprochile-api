@@ -23,10 +23,8 @@ export default {
   name: 'Admin',
   methods: {
     logout() {
-      // Limpia la sesión mínima
-      localStorage.removeItem('user_role')
-      localStorage.removeItem('user_id')
-      localStorage.removeItem('user_nombre')
+      const auth = require('../utils/auth.js').default
+      auth.clearSession()
       this.$router.push('/')
     }
   }
