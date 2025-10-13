@@ -257,6 +257,75 @@ def listar_rutinas(entrenador_usuario_id):
 	return jsonify(result), 200
 
 
+@app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
+def actualizar_rutina(rutina_id):
+	data = request.get_json() or {}
+	header_user_id = request.headers.get('X-User-Id')
+	if not header_user_id:
+		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
+	try:
+		header_user_id = int(header_user_id)
+	except Exception:
+		return jsonify({'error': 'invalid X-User-Id header'}), 400
+
+	rutina = Rutina.query.filter_by(id=rutina_id).first()
+	if not rutina:
+		return jsonify({'error': 'rutina not found'}), 404
+
+	# verificar que el header_user_id corresponde al usuario del entrenador propietario
+	entrenador = Entrenador.query.filter_by(id=rutina.entrenador_id).first()
+	if not entrenador or entrenador.usuario_id != header_user_id:
+		return jsonify({'error': 'forbidden: cannot modify this rutina'}), 403
+
+	nombre = data.get('nombre')
+	descripcion = data.get('descripcion')
+	nivel = data.get('nivel')
+	es_publica = data.get('es_publica')
+
+	if nombre is not None:
+		rutina.nombre = nombre
+	if descripcion is not None:
+		rutina.descripcion = descripcion
+	if nivel is not None:
+		rutina.nivel = nivel
+	if es_publica is not None:
+		rutina.es_publica = bool(es_publica)
+
+	try:
+		db.session.commit()
+		return jsonify({'message': 'rutina actualizada', 'rutina': {'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': rutina.creado_en.isoformat()}}), 200
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/rutinas/<int:rutina_id>', methods=['DELETE'])
+def eliminar_rutina(rutina_id):
+	header_user_id = request.headers.get('X-User-Id')
+	if not header_user_id:
+		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
+	try:
+		header_user_id = int(header_user_id)
+	except Exception:
+		return jsonify({'error': 'invalid X-User-Id header'}), 400
+
+	rutina = Rutina.query.filter_by(id=rutina_id).first()
+	if not rutina:
+		return jsonify({'error': 'rutina not found'}), 404
+
+	entrenador = Entrenador.query.filter_by(id=rutina.entrenador_id).first()
+	if not entrenador or entrenador.usuario_id != header_user_id:
+		return jsonify({'error': 'forbidden: cannot delete this rutina'}), 403
+
+	try:
+		db.session.delete(rutina)
+		db.session.commit()
+		return jsonify({'message': 'rutina eliminada'}), 200
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 if __name__ == '__main__':
 	# Modo debug solo en desarrollo local
 	debug = False if DATABASE_URL else True

@@ -50,17 +50,47 @@
                 <th class="px-4 py-2 text-left">Nivel</th>
                 <th class="px-4 py-2 text-left">Pública</th>
                 <th class="px-4 py-2 text-left">Creado</th>
+                <th class="px-4 py-2 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="r in rutinas" :key="r.id" class="border-t">
-                <td class="px-4 py-2">{{ r.nombre }}</td>
-                <td class="px-4 py-2">{{ r.nivel }}</td>
-                <td class="px-4 py-2">{{ r.es_publica ? 'Sí' : 'No' }}</td>
+                <td class="px-4 py-2">
+                  <div v-if="editingId !== r.id">{{ r.nombre }}</div>
+                  <div v-else>
+                    <input v-model="editForm.nombre" class="border px-2 py-1 w-full" />
+                  </div>
+                </td>
+                <td class="px-4 py-2">
+                  <div v-if="editingId !== r.id">{{ r.nivel }}</div>
+                  <div v-else>
+                    <select v-model="editForm.nivel" class="border px-2 py-1">
+                      <option value="Básico">Básico</option>
+                      <option value="Intermedio">Intermedio</option>
+                      <option value="Avanzado">Avanzado</option>
+                    </select>
+                  </div>
+                </td>
+                <td class="px-4 py-2">
+                  <div v-if="editingId !== r.id">{{ r.es_publica ? 'Sí' : 'No' }}</div>
+                  <div v-else>
+                    <input type="checkbox" v-model="editForm.es_publica" />
+                  </div>
+                </td>
                 <td class="px-4 py-2">{{ formatDate(r.creado_en) }}</td>
+                <td class="px-4 py-2">
+                  <div v-if="editingId !== r.id" class="space-x-2">
+                    <button @click="startEdit(r)" class="px-2 py-1 bg-yellow-400 text-white rounded">Editar</button>
+                    <button @click="deleteRutina(r.id)" class="px-2 py-1 bg-red-600 text-white rounded">Eliminar</button>
+                  </div>
+                  <div v-else class="space-x-2">
+                    <button @click="saveEdit(r.id)" class="px-2 py-1 bg-green-600 text-white rounded">Guardar</button>
+                    <button @click="cancelEdit" class="px-2 py-1 bg-gray-300 rounded">Cancelar</button>
+                  </div>
+                </td>
               </tr>
               <tr v-if="!rutinas.length">
-                <td class="px-4 py-2" colspan="4">No hay rutinas aún.</td>
+                <td class="px-4 py-2" colspan="5">No hay rutinas aún.</td>
               </tr>
             </tbody>
           </table>
@@ -91,20 +121,25 @@ export default {
       auth.clearSession()
       this.$router.push('/')
     },
+
     async fetchRutinas() {
       const session = auth.getSession()
       if (!session.user_id) return
       try {
-  const res = await fetch(`/api/rutinas/${session.user_id}`, { headers: { 'X-User-Id': session.user_id } })
+        const res = await fetch(`/api/rutinas/${session.user_id}`, {
+          headers: { 'X-User-Id': session.user_id }
+        })
         if (!res.ok) throw new Error('error fetching')
         this.rutinas = await res.json()
       } catch (e) {
         console.error('fetchRutinas', e)
       }
     },
+
     formatDate(iso) {
       try { return new Date(iso).toLocaleString() } catch { return iso }
     },
+
     async createRutina() {
       const session = auth.getSession()
       if (!session.user_id) {
@@ -114,7 +149,8 @@ export default {
       const payload = { ...this.form, entrenador_id: session.user_id }
       try {
         const res = await fetch('/api/rutinas', {
-          method: 'POST', headers: { 'Content-Type': 'application/json', 'X-User-Id': session.user_id },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-User-Id': session.user_id },
           body: JSON.stringify(payload)
         })
         if (!res.ok) {
@@ -131,7 +167,56 @@ export default {
         console.error('createRutina', e)
         alert('Error creando rutina')
       }
+    },
+
+    // Edit/Delete handlers
+    async deleteRutina(id) {
+      if (!confirm('¿Eliminar rutina?')) return
+      const session = auth.getSession()
+      try {
+        const res = await fetch(`/api/rutinas/${id}`, { method: 'DELETE', headers: { 'X-User-Id': session.user_id } })
+        if (!res.ok) {
+          const err = await res.json()
+          alert('Error: ' + (err.error || JSON.stringify(err)))
+          return
+        }
+        await this.fetchRutinas()
+      } catch (e) {
+        console.error('deleteRutina', e)
+        alert('Error eliminando rutina')
+      }
+    },
+
+    startEdit(r) {
+      this.editingId = r.id
+      this.editForm = { nombre: r.nombre, nivel: r.nivel, es_publica: !!r.es_publica }
+    },
+
+    cancelEdit() {
+      this.editingId = null
+      this.editForm = { nombre: '', nivel: 'Básico', es_publica: false }
+    },
+
+    async saveEdit(id) {
+      const session = auth.getSession()
+      try {
+        const res = await fetch(`/api/rutinas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-User-Id': session.user_id }, body: JSON.stringify(this.editForm) })
+        if (!res.ok) {
+          const err = await res.json()
+          alert('Error: ' + (err.error || JSON.stringify(err)))
+          return
+        }
+        this.cancelEdit()
+        await this.fetchRutinas()
+      } catch (e) {
+        console.error('saveEdit', e)
+        alert('Error actualizando rutina')
+      }
     }
+  },
+  created() {
+    this.editingId = null
+    this.editForm = { nombre: '', nivel: 'Básico', es_publica: false }
   },
   mounted() {
     this.fetchRutinas()
