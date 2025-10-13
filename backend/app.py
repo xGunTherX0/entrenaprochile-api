@@ -11,6 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 from werkzeug.security import generate_password_hash, check_password_hash
+from auth import generate_token
 
 
 @app.route('/api/usuarios/register', methods=['POST'])
@@ -67,8 +68,10 @@ def login_usuario():
 		elif getattr(user, 'cliente', None):
 			role = 'cliente'
 
-	# Devuelve role y nombre para que el frontend pueda redirigir según rol
-	return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre}), 200
+	# Generar token JWT con user info
+	token = generate_token({'user_id': user.id, 'role': role, 'nombre': user.nombre})
+	# Devuelve role, nombre y token
+	return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre, 'token': token}), 200
 
 
 # --- Lógica de Conexión (el cambio clave) ---
@@ -105,6 +108,7 @@ db = db_instance
 with app.app_context():
 	from database.database import Usuario, Cliente, Entrenador  # noqa: F401
 	from database.database import Rutina  # noqa: F401
+	from auth import jwt_required
 
 	# --- Seed: crear usuario administrador por defecto si no existe ---
 	ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
@@ -187,6 +191,7 @@ def listar_mediciones(cliente_id):
 
 
 @app.route('/api/rutinas', methods=['POST'])
+@jwt_required
 def crear_rutina():
 	data = request.get_json() or {}
 	entrenador_usuario_id = data.get('entrenador_id') or data.get('user_id')
@@ -195,17 +200,9 @@ def crear_rutina():
 	nivel = data.get('nivel')
 	es_publica = data.get('es_publica', False)
 
-	# Security: require that the request includes the authenticated user id in a header
-	header_user_id = request.headers.get('X-User-Id')
-	if not header_user_id:
-		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
+	header_user_id = request.jwt_payload.get('user_id')
 
-	try:
-		header_user_id = int(header_user_id)
-	except Exception:
-		return jsonify({'error': 'invalid X-User-Id header'}), 400
-
-	# If the client provided an entrenador_usuario_id in body ensure it matches the header
+	# If the client provided an entrenador_usuario_id in body ensure it matches the token user
 	if entrenador_usuario_id:
 		try:
 			entrenador_usuario_id = int(entrenador_usuario_id)
@@ -214,7 +211,7 @@ def crear_rutina():
 		if entrenador_usuario_id != header_user_id:
 			return jsonify({'error': 'forbidden: cannot create rutina for another entrenador'}), 403
 
-	# Buscar entrenador por el usuario autenticado (header)
+	# Buscar entrenador por el usuario autenticado (from token)
 	entrenador = Entrenador.query.filter_by(usuario_id=header_user_id).first()
 	if not entrenador:
 		return jsonify({'error': 'entrenador not found or not authenticated as entrenador'}), 404
@@ -233,16 +230,9 @@ def crear_rutina():
 
 
 @app.route('/api/rutinas/<int:entrenador_usuario_id>', methods=['GET'])
+@jwt_required
 def listar_rutinas(entrenador_usuario_id):
-	# Security: require header with authenticated user id and ensure it matches the requested id
-	header_user_id = request.headers.get('X-User-Id')
-	if not header_user_id:
-		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
-	try:
-		header_user_id = int(header_user_id)
-	except Exception:
-		return jsonify({'error': 'invalid X-User-Id header'}), 400
-
+	header_user_id = request.jwt_payload.get('user_id')
 	if header_user_id != entrenador_usuario_id:
 		return jsonify({'error': 'forbidden: cannot view rutinas of another entrenador'}), 403
 
@@ -258,21 +248,16 @@ def listar_rutinas(entrenador_usuario_id):
 
 
 @app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
+@jwt_required
 def actualizar_rutina(rutina_id):
 	data = request.get_json() or {}
-	header_user_id = request.headers.get('X-User-Id')
-	if not header_user_id:
-		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
-	try:
-		header_user_id = int(header_user_id)
-	except Exception:
-		return jsonify({'error': 'invalid X-User-Id header'}), 400
+	header_user_id = request.jwt_payload.get('user_id')
 
 	rutina = Rutina.query.filter_by(id=rutina_id).first()
 	if not rutina:
 		return jsonify({'error': 'rutina not found'}), 404
 
-	# verificar que el header_user_id corresponde al usuario del entrenador propietario
+	# verificar que el token user_id corresponde al usuario del entrenador propietario
 	entrenador = Entrenador.query.filter_by(id=rutina.entrenador_id).first()
 	if not entrenador or entrenador.usuario_id != header_user_id:
 		return jsonify({'error': 'forbidden: cannot modify this rutina'}), 403
@@ -300,14 +285,9 @@ def actualizar_rutina(rutina_id):
 
 
 @app.route('/api/rutinas/<int:rutina_id>', methods=['DELETE'])
+@jwt_required
 def eliminar_rutina(rutina_id):
-	header_user_id = request.headers.get('X-User-Id')
-	if not header_user_id:
-		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
-	try:
-		header_user_id = int(header_user_id)
-	except Exception:
-		return jsonify({'error': 'invalid X-User-Id header'}), 400
+	header_user_id = request.jwt_payload.get('user_id')
 
 	rutina = Rutina.query.filter_by(id=rutina_id).first()
 	if not rutina:

@@ -126,9 +126,8 @@ export default {
       const session = auth.getSession()
       if (!session.user_id) return
       try {
-        const res = await fetch(`/api/rutinas/${session.user_id}`, {
-          headers: { 'X-User-Id': session.user_id }
-        })
+        const headers = { ...auth.authHeaders() }
+        const res = await fetch(`/api/rutinas/${session.user_id}`, { headers })
         if (!res.ok) throw new Error('error fetching')
         this.rutinas = await res.json()
       } catch (e) {
@@ -148,9 +147,10 @@ export default {
       }
       const payload = { ...this.form, entrenador_id: session.user_id }
       try {
+        const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
         const res = await fetch('/api/rutinas', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-User-Id': session.user_id },
+          headers,
           body: JSON.stringify(payload)
         })
         if (!res.ok) {
@@ -174,7 +174,7 @@ export default {
       if (!confirm('¿Eliminar rutina?')) return
       const session = auth.getSession()
       try {
-        const res = await fetch(`/api/rutinas/${id}`, { method: 'DELETE', headers: { 'X-User-Id': session.user_id } })
+  const res = await fetch(`/api/rutinas/${id}`, { method: 'DELETE', headers: auth.authHeaders() })
         if (!res.ok) {
           const err = await res.json()
           alert('Error: ' + (err.error || JSON.stringify(err)))
@@ -200,7 +200,8 @@ export default {
     async saveEdit(id) {
       const session = auth.getSession()
       try {
-        const res = await fetch(`/api/rutinas/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-User-Id': session.user_id }, body: JSON.stringify(this.editForm) })
+  const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
+  const res = await fetch(`/api/rutinas/${id}`, { method: 'PUT', headers, body: JSON.stringify(this.editForm) })
         if (!res.ok) {
           const err = await res.json()
           alert('Error: ' + (err.error || JSON.stringify(err)))

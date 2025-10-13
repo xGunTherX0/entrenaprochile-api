@@ -64,13 +64,14 @@ export default {
           return
         }
 
-  // data should include { message, user_id, role, nombre }
+  // data should include { message, user_id, role, nombre, token }
   const role = data.role || 'usuario'
   const nombre = data.nombre || ''
+  const token = data.token
 
-  // Guarda en sesión usando helper
+  // Guarda en sesión usando helper (incluye token JWT)
   const auth = (await import('../utils/auth.js')).default
-  auth.setSession({ user_id: data.user_id, role, nombre })
+  auth.setSession({ user_id: data.user_id, role, nombre, token })
 
         // Redirige según rol
         if (role === 'entrenador') {
