@@ -11,7 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from auth import generate_token
+from backend.auth import generate_token
 
 
 @app.route('/api/usuarios/register', methods=['POST'])
@@ -108,7 +108,7 @@ db = db_instance
 with app.app_context():
 	from database.database import Usuario, Cliente, Entrenador  # noqa: F401
 	from database.database import Rutina  # noqa: F401
-	from auth import jwt_required
+	from backend.auth import jwt_required
 
 	# --- Seed: crear usuario administrador por defecto si no existe ---
 	ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
