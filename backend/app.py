@@ -152,6 +152,14 @@ def ping():
 	return jsonify({'status': 'ok'})
 
 
+@app.route('/', methods=['GET'])
+def root_health():
+	"""Health check for Render / external load balancers. Returns 200 OK.
+	This helps detect whether Flask is running and responding at the root path.
+	"""
+	return jsonify({'status': 'ok'}), 200
+
+
 @app.route('/api/mediciones', methods=['POST'])
 @jwt_required
 def crear_medicion():
