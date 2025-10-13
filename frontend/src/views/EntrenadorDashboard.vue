@@ -8,7 +8,7 @@
         <li class="mb-2"><a href="#" class="text-blue-600">Publicar Contenido</a></li>
       </ul>
       <div class="mt-6">
-        <button @click="$emit('logout')" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
+        <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
       </div>
     </nav>
     <main class="flex-1 p-6">
@@ -20,6 +20,14 @@
 
 <script>
 export default {
-  name: 'EntrenadorDashboard'
+  name: 'EntrenadorDashboard',
+  methods: {
+    logout() {
+      localStorage.removeItem('user_role')
+      localStorage.removeItem('user_id')
+      localStorage.removeItem('user_nombre')
+      this.$router.push('/')
+    }
+  }
 }
 </script>
