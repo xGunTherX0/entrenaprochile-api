@@ -35,7 +35,7 @@
           </div>
         </form>
       </div>
-      
+
       <div class="mt-8">
         <h2 class="text-lg font-semibold mb-2">Historial de Mediciones</h2>
         <div v-if="loadingList">Cargando...</div>
@@ -58,26 +58,32 @@
           </tbody>
         </table>
       </div>
+
+      <div class="mt-8 bg-white p-4 rounded shadow">
+        <h2 class="text-lg font-semibold mb-2">Evolución de Peso</h2>
+        <WeightChart :measurements="mediciones" />
+      </div>
+
     </main>
   </div>
 </template>
 
 <script>
-export default {
-  name: 'ClienteDashboard',
-  methods: {
-</script>
+import WeightChart from '../components/WeightChart.vue'
+import auth from '../utils/auth.js'
 
-<script>
 export default {
   name: 'ClienteDashboard',
+  components: { WeightChart },
   data() {
     return {
       peso: null,
       altura: null,
       cintura: null,
       saving: false,
-      msg: ''
+      msg: '',
+      mediciones: [],
+      loadingList: false
     }
   },
   methods: {
@@ -86,7 +92,7 @@ export default {
       this.msg = ''
       try {
         const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
-        const user_id = localStorage.getItem('user_id')
+        const user_id = auth.getSession().user_id
         const res = await fetch(`${base}/api/mediciones`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -103,16 +109,14 @@ export default {
       } finally {
         this.saving = false
       }
-    }
+    },
 
     async fetchMediciones() {
       this.loadingList = true
       this.mediciones = []
       try {
         const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
-        const user_id = localStorage.getItem('user_id')
-        // primero buscar el cliente por usuario_id (backend expects cliente.id in GET endpoint)
-        // pero our POST used cliente_id=user_id; backend resolves cliente by usuario_id
+        const user_id = auth.getSession().user_id
         const res = await fetch(`${base}/api/mediciones/${user_id}`)
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
@@ -122,14 +126,15 @@ export default {
       } finally {
         this.loadingList = false
       }
-    }
-  }
-}
+    },
+
     logout() {
-      const auth = require('../utils/auth.js').default
       auth.clearSession()
       this.$router.push('/')
     }
+  },
+  mounted() {
+    this.fetchMediciones()
   }
 }
 </script>
