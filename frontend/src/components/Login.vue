@@ -72,6 +72,8 @@ export default {
           this.$router.push('/entrenador')
         } else if (role === 'cliente') {
           this.$router.push('/cliente')
+        } else if (role === 'admin') {
+          this.$router.push('/admin')
         } else {
           this.$router.push('/home')
         }
