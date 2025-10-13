@@ -104,6 +104,7 @@ db = db_instance
 # Importa modelos después de inicializar db para evitar importación circular
 with app.app_context():
 	from database.database import Usuario, Cliente, Entrenador  # noqa: F401
+	from database.database import Rutina  # noqa: F401
 
 	# --- Seed: crear usuario administrador por defecto si no existe ---
 	ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
@@ -182,6 +183,77 @@ def listar_mediciones(cliente_id):
 	result = []
 	for m in mediciones:
 		result.append({'id': m.id, 'peso': m.peso, 'altura': m.altura, 'cintura': m.cintura, 'creado_en': m.creado_en.isoformat()})
+	return jsonify(result), 200
+
+
+@app.route('/api/rutinas', methods=['POST'])
+def crear_rutina():
+	data = request.get_json() or {}
+	entrenador_usuario_id = data.get('entrenador_id') or data.get('user_id')
+	nombre = data.get('nombre')
+	descripcion = data.get('descripcion')
+	nivel = data.get('nivel')
+	es_publica = data.get('es_publica', False)
+
+	# Security: require that the request includes the authenticated user id in a header
+	header_user_id = request.headers.get('X-User-Id')
+	if not header_user_id:
+		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
+
+	try:
+		header_user_id = int(header_user_id)
+	except Exception:
+		return jsonify({'error': 'invalid X-User-Id header'}), 400
+
+	# If the client provided an entrenador_usuario_id in body ensure it matches the header
+	if entrenador_usuario_id:
+		try:
+			entrenador_usuario_id = int(entrenador_usuario_id)
+		except Exception:
+			return jsonify({'error': 'invalid entrenador_id'}), 400
+		if entrenador_usuario_id != header_user_id:
+			return jsonify({'error': 'forbidden: cannot create rutina for another entrenador'}), 403
+
+	# Buscar entrenador por el usuario autenticado (header)
+	entrenador = Entrenador.query.filter_by(usuario_id=header_user_id).first()
+	if not entrenador:
+		return jsonify({'error': 'entrenador not found or not authenticated as entrenador'}), 404
+
+	if not nombre:
+		return jsonify({'error': 'nombre required'}), 400
+
+	try:
+		rutina = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
+		db.session.add(rutina)
+		db.session.commit()
+		return jsonify({'message': 'rutina creada', 'rutina': {'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': rutina.creado_en.isoformat()}}), 201
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/rutinas/<int:entrenador_usuario_id>', methods=['GET'])
+def listar_rutinas(entrenador_usuario_id):
+	# Security: require header with authenticated user id and ensure it matches the requested id
+	header_user_id = request.headers.get('X-User-Id')
+	if not header_user_id:
+		return jsonify({'error': 'authentication required (X-User-Id header)'}), 401
+	try:
+		header_user_id = int(header_user_id)
+	except Exception:
+		return jsonify({'error': 'invalid X-User-Id header'}), 400
+
+	if header_user_id != entrenador_usuario_id:
+		return jsonify({'error': 'forbidden: cannot view rutinas of another entrenador'}), 403
+
+	entrenador = Entrenador.query.filter_by(usuario_id=entrenador_usuario_id).first()
+	if not entrenador:
+		return jsonify({'error': 'entrenador not found'}), 404
+
+	rutinas = Rutina.query.filter_by(entrenador_id=entrenador.id).order_by(Rutina.creado_en.desc()).all()
+	result = []
+	for r in rutinas:
+		result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': r.creado_en.isoformat()})
 	return jsonify(result), 200
 
 

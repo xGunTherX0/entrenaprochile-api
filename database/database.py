@@ -30,7 +30,9 @@ class Cliente(db.Model):
     altura = db.Column(db.Float)
 
     usuario = db.relationship('Usuario', back_populates='cliente')
-    rutinas = db.relationship('Rutina', back_populates='cliente')
+    # Clientes pueden recibir rutinas, pero en esta versión las rutinas las crea el Entrenador.
+    # Mantenemos relación vacía por si se asocia en el futuro.
+    # rutinas = db.relationship('Rutina', back_populates='cliente')
     mediciones = db.relationship('Medicion', back_populates='cliente')
 
     def __repr__(self):
@@ -44,6 +46,7 @@ class Entrenador(db.Model):
     speciality = db.Column(db.String(200))
 
     usuario = db.relationship('Usuario', back_populates='entrenador')
+    rutinas = db.relationship('Rutina', backref='entrenador', lazy=True)
 
     def __repr__(self):
         return f'<Entrenador {self.id}>'
@@ -52,11 +55,14 @@ class Entrenador(db.Model):
 class Rutina(db.Model):
     __tablename__ = 'rutinas'
     id = db.Column(db.Integer, primary_key=True)
-    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
+    entrenador_id = db.Column(db.Integer, db.ForeignKey('entrenadores.id'), nullable=False)
     nombre = db.Column(db.String(200), nullable=False)
     descripcion = db.Column(db.Text)
+    nivel = db.Column(db.String(50))
+    es_publica = db.Column(db.Boolean, default=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
-    cliente = db.relationship('Cliente', back_populates='rutinas')
+    # relación hacia ejercicios (puede mantenerse para futuros asignamientos)
     ejercicios = db.relationship('Ejercicio', secondary='rutina_ejercicio', back_populates='rutinas')
 
     def __repr__(self):
