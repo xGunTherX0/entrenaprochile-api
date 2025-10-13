@@ -64,8 +64,14 @@ export default {
           return
         }
 
-        // data should include { message, user_id, role, nombre }
-        const role = data.role || 'usuario'
+  // data should include { message, user_id, role, nombre }
+  const role = data.role || 'usuario'
+  const nombre = data.nombre || ''
+
+  // Guarda en localStorage (simple session)
+  localStorage.setItem('user_role', role)
+  localStorage.setItem('user_nombre', nombre)
+  localStorage.setItem('user_id', data.user_id)
 
         // Redirige según rol
         if (role === 'entrenador') {

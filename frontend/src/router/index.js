@@ -38,4 +38,19 @@ const router = createRouter({
   routes
 })
 
+// Rutas protegidas: cualquiera que no sea login ('/') requiere sesión
+const protectedPaths = ['/entrenador', '/cliente', '/admin', '/home']
+
+router.beforeEach((to, from, next) => {
+  if (protectedPaths.includes(to.path)) {
+    const role = localStorage.getItem('user_role')
+    const userId = localStorage.getItem('user_id')
+    if (!role || !userId) {
+      // No logueado -> redirigir al login
+      return next({ path: '/' })
+    }
+  }
+  next()
+})
+
 export default router
