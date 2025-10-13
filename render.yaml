@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: gunicorn backend.app:app --bind 0.0.0.0:$PORT
+  startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT
     # No incluir DATABASE_URL aquí; configúrala en la UI de Render o usando secrets
 
 jobs:
