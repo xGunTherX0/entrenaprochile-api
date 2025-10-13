@@ -138,6 +138,31 @@ def ping():
 	return jsonify({'status': 'ok'})
 
 
+@app.route('/api/mediciones', methods=['POST'])
+def crear_medicion():
+	data = request.get_json() or {}
+	cliente_id = data.get('cliente_id') or data.get('user_id')
+	peso = data.get('peso')
+	altura = data.get('altura')
+	cintura = data.get('cintura')
+
+	if not cliente_id:
+		return jsonify({'error': 'cliente_id required'}), 400
+
+	cliente = Cliente.query.filter_by(usuario_id=cliente_id).first()
+	if not cliente:
+		return jsonify({'error': 'cliente not found'}), 404
+
+	try:
+		medicion = Medicion(cliente_id=cliente.id, peso=peso, altura=altura, cintura=cintura)
+		db.session.add(medicion)
+		db.session.commit()
+		return jsonify({'message': 'medicion creada', 'id': medicion.id}), 201
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 if __name__ == '__main__':
 	# Modo debug solo en desarrollo local
 	debug = False if DATABASE_URL else True
