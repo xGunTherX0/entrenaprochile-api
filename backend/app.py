@@ -56,11 +56,16 @@ def login_usuario():
 		return jsonify({'error': 'invalid credentials'}), 401
 
 	# Determina rol según relaciones (Cliente / Entrenador)
-	role = 'usuario'
-	if getattr(user, 'entrenador', None):
-		role = 'entrenador'
-	elif getattr(user, 'cliente', None):
-		role = 'cliente'
+	# Prioridad: si el usuario es el ADMIN (según variable de entorno)
+	ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
+	if user.email == ADMIN_EMAIL:
+		role = 'admin'
+	else:
+		role = 'usuario'
+		if getattr(user, 'entrenador', None):
+			role = 'entrenador'
+		elif getattr(user, 'cliente', None):
+			role = 'cliente'
 
 	# Devuelve role y nombre para que el frontend pueda redirigir según rol
 	return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre}), 200
@@ -99,6 +104,22 @@ db = db_instance
 # Importa modelos después de inicializar db para evitar importación circular
 with app.app_context():
 	from database.database import Usuario, Cliente, Entrenador  # noqa: F401
+
+	# --- Seed: crear usuario administrador por defecto si no existe ---
+	ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
+	ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'admin123')
+	try:
+		admin_exists = Usuario.query.filter_by(email=ADMIN_EMAIL).first()
+		if not admin_exists:
+			hashed = generate_password_hash(ADMIN_PASSWORD)
+			admin_user = Usuario(email=ADMIN_EMAIL, nombre='Administrador', hashed_password=hashed)
+			db.session.add(admin_user)
+			db.session.commit()
+			# opcional: puedes crear una fila en Entrenador/Cliente si quieres que sea tratado como tal
+			print(f"Admin creado: {ADMIN_EMAIL}")
+	except Exception:
+		# Si la base de datos aún no está migrada o hay un error, no interrumpimos el arranque
+		pass
 
 
 # Asegura que la carpeta database exista cuando uses SQLite en desarrollo
