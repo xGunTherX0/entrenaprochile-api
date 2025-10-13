@@ -55,7 +55,15 @@ def login_usuario():
 	if not check_password_hash(user.hashed_password, password):
 		return jsonify({'error': 'invalid credentials'}), 401
 
-	return jsonify({'message': 'ok', 'user_id': user.id}), 200
+	# Determina rol según relaciones (Cliente / Entrenador)
+	role = 'usuario'
+	if getattr(user, 'entrenador', None):
+		role = 'entrenador'
+	elif getattr(user, 'cliente', None):
+		role = 'cliente'
+
+	# Devuelve role y nombre para que el frontend pueda redirigir según rol
+	return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre}), 200
 
 
 # --- Lógica de Conexión (el cambio clave) ---
@@ -90,7 +98,7 @@ db = db_instance
 
 # Importa modelos después de inicializar db para evitar importación circular
 with app.app_context():
-	from database.database import Usuario, Cliente  # noqa: F401
+	from database.database import Usuario, Cliente, Entrenador  # noqa: F401
 
 
 # Asegura que la carpeta database exista cuando uses SQLite en desarrollo
