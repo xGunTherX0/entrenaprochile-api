@@ -160,6 +160,15 @@ def root_health():
 	return jsonify({'status': 'ok'}), 200
 
 
+@app.route('/api', methods=['GET'])
+def api_root():
+	"""Simple API root to confirm that /api routes are reachable.
+	This is temporary and helps confirm whether the Flask app is mounting
+	the API under the expected path on Render.
+	"""
+	return jsonify({'api': 'ok'}), 200
+
+
 @app.route('/api/mediciones', methods=['POST'])
 @jwt_required
 def crear_medicion():
