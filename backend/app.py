@@ -338,5 +338,8 @@ def eliminar_rutina(rutina_id):
 if __name__ == '__main__':
 	# Modo debug solo en desarrollo local
 	debug = False if DATABASE_URL else True
-	app.run(host='0.0.0.0', port=5000, debug=debug)
+	# En producción Render asigna el puerto a través de la variable de entorno PORT
+	port = int(os.getenv('PORT', '5000'))
+	print(f"Starting Flask on 0.0.0.0:{port} (debug={debug})")
+	app.run(host='0.0.0.0', port=port, debug=debug)
 
