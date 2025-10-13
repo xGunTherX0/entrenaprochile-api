@@ -153,17 +153,19 @@ def ping():
 
 
 @app.route('/api/mediciones', methods=['POST'])
+@jwt_required
 def crear_medicion():
 	data = request.get_json() or {}
-	cliente_id = data.get('cliente_id') or data.get('user_id')
 	peso = data.get('peso')
 	altura = data.get('altura')
 	cintura = data.get('cintura')
 
-	if not cliente_id:
-		return jsonify({'error': 'cliente_id required'}), 400
+	# Obtener cliente por el user_id incluido en el token
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
 
-	cliente = Cliente.query.filter_by(usuario_id=cliente_id).first()
+	cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
 	if not cliente:
 		return jsonify({'error': 'cliente not found'}), 404
 
@@ -178,10 +180,20 @@ def crear_medicion():
 
 
 @app.route('/api/mediciones/<int:cliente_id>', methods=['GET'])
+@jwt_required
 def listar_mediciones(cliente_id):
+	# Ensure the token user matches the requested cliente_id's usuario
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
 	cliente = Cliente.query.filter_by(id=cliente_id).first()
 	if not cliente:
 		return jsonify({'error': 'cliente not found'}), 404
+
+	# verify ownership: the cliente.usuario_id must match token user
+	if cliente.usuario_id != token_user_id:
+		return jsonify({'error': 'forbidden: cannot view mediciones of another cliente'}), 403
 
 	mediciones = Medicion.query.filter_by(cliente_id=cliente.id).order_by(Medicion.creado_en.desc()).all()
 	result = []

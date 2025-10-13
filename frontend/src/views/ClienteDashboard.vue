@@ -93,10 +93,11 @@ export default {
       try {
         const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
         const user_id = auth.getSession().user_id
+        const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
         const res = await fetch(`${base}/api/mediciones`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cliente_id: user_id, peso: this.peso, altura: this.altura, cintura: this.cintura })
+          headers,
+          body: JSON.stringify({ peso: this.peso, altura: this.altura, cintura: this.cintura })
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Error al guardar')
@@ -117,7 +118,8 @@ export default {
       try {
         const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
         const user_id = auth.getSession().user_id
-        const res = await fetch(`${base}/api/mediciones/${user_id}`)
+  const headers = { ...auth.authHeaders() }
+  const res = await fetch(`${base}/api/mediciones/${user_id}`, { headers })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
         this.mediciones = data
