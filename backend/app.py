@@ -121,6 +121,15 @@ with app.app_context():
 		# Si la base de datos aún no está migrada o hay un error, no interrumpimos el arranque
 		pass
 
+# CREAR TABLAS AUTOMÁTICAMENTE EN DESARROLLO (NO EJECUTAR EN PRODUCCIÓN)
+if not DATABASE_URL:
+	try:
+		with app.app_context():
+			db.create_all()
+			print('DB: create_all executed (development mode)')
+	except Exception as e:
+		print('DB create_all failed:', e)
+
 
 # Asegura que la carpeta database exista cuando uses SQLite en desarrollo
 if not DATABASE_URL:
@@ -161,6 +170,19 @@ def crear_medicion():
 	except Exception as e:
 		db.session.rollback()
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/mediciones/<int:cliente_id>', methods=['GET'])
+def listar_mediciones(cliente_id):
+	cliente = Cliente.query.filter_by(id=cliente_id).first()
+	if not cliente:
+		return jsonify({'error': 'cliente not found'}), 404
+
+	mediciones = Medicion.query.filter_by(cliente_id=cliente.id).order_by(Medicion.creado_en.desc()).all()
+	result = []
+	for m in mediciones:
+		result.append({'id': m.id, 'peso': m.peso, 'altura': m.altura, 'cintura': m.cintura, 'creado_en': m.creado_en.isoformat()})
+	return jsonify(result), 200
 
 
 if __name__ == '__main__':

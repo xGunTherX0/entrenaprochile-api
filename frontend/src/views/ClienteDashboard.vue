@@ -35,6 +35,29 @@
           </div>
         </form>
       </div>
+      
+      <div class="mt-8">
+        <h2 class="text-lg font-semibold mb-2">Historial de Mediciones</h2>
+        <div v-if="loadingList">Cargando...</div>
+        <table v-else class="min-w-full bg-white shadow rounded">
+          <thead>
+            <tr class="text-left">
+              <th class="px-4 py-2">Fecha</th>
+              <th class="px-4 py-2">Peso (kg)</th>
+              <th class="px-4 py-2">Altura (cm)</th>
+              <th class="px-4 py-2">Cintura (cm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in mediciones" :key="m.id">
+              <td class="px-4 py-2">{{ new Date(m.creado_en).toLocaleString() }}</td>
+              <td class="px-4 py-2">{{ m.peso }}</td>
+              <td class="px-4 py-2">{{ m.altura }}</td>
+              <td class="px-4 py-2">{{ m.cintura }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </main>
   </div>
 </template>
@@ -73,10 +96,31 @@ export default {
         if (!res.ok) throw new Error(data.error || 'Error al guardar')
         this.msg = 'Medición guardada con id ' + data.id
         this.peso = this.altura = this.cintura = null
+        // refrescar la lista
+        this.fetchMediciones()
       } catch (err) {
         this.msg = err.message
       } finally {
         this.saving = false
+      }
+    }
+
+    async fetchMediciones() {
+      this.loadingList = true
+      this.mediciones = []
+      try {
+        const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+        const user_id = localStorage.getItem('user_id')
+        // primero buscar el cliente por usuario_id (backend expects cliente.id in GET endpoint)
+        // pero our POST used cliente_id=user_id; backend resolves cliente by usuario_id
+        const res = await fetch(`${base}/api/mediciones/${user_id}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
+        this.mediciones = data
+      } catch (err) {
+        console.error(err)
+      } finally {
+        this.loadingList = false
       }
     }
   }
