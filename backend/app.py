@@ -335,6 +335,46 @@ def eliminar_rutina(rutina_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+# Dev-only helper: promover un usuario a Entrenador
+# Solo está habilitado si se define la variable de entorno DEV_PROMOTE_SECRET.
+# Uso: POST /api/dev/promote_entrenador  { "email": "user@test.local", "secret": "<secret>" }
+# Esto crea una fila Entrenador(usuario_id=usuario.id) si no existe.
+@app.route('/api/dev/promote_entrenador', methods=['POST'])
+def dev_promote_entrenador():
+	secret = os.getenv('DEV_PROMOTE_SECRET')
+	# Endpoint disabled si no hay secreto configurado
+	if not secret:
+		return jsonify({'error': 'not found'}), 404
+
+	data = request.get_json() or {}
+	provided = data.get('secret')
+	email = data.get('email')
+	if not provided or provided != secret:
+		return jsonify({'error': 'unauthorized'}), 401
+
+	if not email:
+		return jsonify({'error': 'email required'}), 400
+
+	try:
+		from database.database import Usuario, Entrenador
+		user = Usuario.query.filter_by(email=email).first()
+		if not user:
+			return jsonify({'error': 'user not found'}), 404
+
+		# Si ya tiene entrenador, devolvemos 200 con info
+		existing = Entrenador.query.filter_by(usuario_id=user.id).first()
+		if existing:
+			return jsonify({'message': 'already entrenador', 'entrenador_id': existing.id}), 200
+
+		entrenador = Entrenador(usuario_id=user.id)
+		db.session.add(entrenador)
+		db.session.commit()
+		return jsonify({'message': 'entrenador creado', 'entrenador_id': entrenador.id}), 201
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 if __name__ == '__main__':
 	# Modo debug solo en desarrollo local
 	debug = False if DATABASE_URL else True

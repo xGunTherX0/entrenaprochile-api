@@ -2,14 +2,23 @@ import os
 import jwt
 from functools import wraps
 from flask import request, jsonify
+from datetime import datetime, timedelta
 
 JWT_SECRET = os.getenv('JWT_SECRET', 'dev-secret-change-me')
 JWT_ALGORITHM = 'HS256'
+# Seconds for token expiration. Make configurable via env var.
+JWT_EXPIRES_SECONDS = int(os.getenv('JWT_EXPIRES_SECONDS', '3600'))
 
-def generate_token(payload, expires_in=3600):
+
+def generate_token(payload, expires_in: int | None = None):
+    """Generate a JWT including an 'exp' claim.
+
+    expires_in: seconds until expiration. If None, uses JWT_EXPIRES_SECONDS.
+    """
     data = payload.copy()
-    # Optional: include exp in future
-    # data['exp'] = datetime.utcnow() + timedelta(seconds=expires_in)
+    ttl = JWT_EXPIRES_SECONDS if expires_in is None else int(expires_in)
+    data['exp'] = datetime.utcnow() + timedelta(seconds=ttl)
+    # PyJWT returns a str in modern versions
     token = jwt.encode(data, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
 
@@ -18,7 +27,11 @@ def decode_token(token):
     try:
         decoded = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return decoded
-    except jwt.PyJWTError as e:
+    except jwt.ExpiredSignatureError:
+        # token expired
+        return None
+    except jwt.PyJWTError:
+        # invalid token
         return None
 
 
