@@ -91,7 +91,8 @@ export default {
       this.saving = true
       this.msg = ''
       try {
-        const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+  // Usar VITE_API_BASE en build; fallback a la URL pública del backend si no está definida
+  const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
         const user_id = auth.getSession().user_id
         const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
         const res = await fetch(`${base}/api/mediciones`, {
@@ -116,7 +117,8 @@ export default {
       this.loadingList = true
       this.mediciones = []
       try {
-        const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+  // Usar VITE_API_BASE en build; fallback a la URL pública del backend si no está definida
+  const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
         const user_id = auth.getSession().user_id
   const headers = { ...auth.authHeaders() }
   const res = await fetch(`${base}/api/mediciones/${user_id}`, { headers })

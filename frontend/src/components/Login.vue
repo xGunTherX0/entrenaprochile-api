@@ -49,8 +49,9 @@ export default {
       this.error = null
       this.loading = true
       try {
-        // Ajusta la baseURL según entorno. En producción Netlify sirve frontend y backend separado.
-        const base = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+  // Ajusta la baseURL según entorno. En producción Netlify sirve frontend y backend separado.
+  // Si VITE_API_BASE no está definida en el entorno de Netlify, usar la URL pública del backend en Render.
+  const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
         const res = await fetch(`${base}/api/usuarios/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
