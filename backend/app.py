@@ -122,8 +122,17 @@ with app.app_context():
 			admin_user = Usuario(email=ADMIN_EMAIL, nombre='Administrador', hashed_password=hashed)
 			db.session.add(admin_user)
 			db.session.commit()
-			# opcional: puedes crear una fila en Entrenador/Cliente si quieres que sea tratado como tal
-			print(f"Admin creado: {ADMIN_EMAIL}")
+			# Crear filas Cliente y Entrenador para el admin por conveniencia en pruebas
+			try:
+				cliente = Cliente(usuario_id=admin_user.id)
+				db.session.add(cliente)
+				entrenador = Entrenador(usuario_id=admin_user.id)
+				db.session.add(entrenador)
+				db.session.commit()
+			except Exception:
+				# no fatal, seguimos
+				db.session.rollback()
+			print(f"Admin creado: {ADMIN_EMAIL} (cliente+entrenador creados)")
 	except Exception:
 		# Si la base de datos aún no está migrada o hay un error, no interrumpimos el arranque
 		pass
