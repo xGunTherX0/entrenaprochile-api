@@ -6,9 +6,11 @@ from flask_cors import CORS
 # Inicialización de la aplicación
 app = Flask(__name__)
 
-# Habilita CORS para evitar bloqueos desde el frontend (Netlify). En producción
-# deberías restringir el origen a tu dominio (ej: CORS(app, resources={r"/api/*": {"origins": "https://tu-sitio.netlify.app"}})).
-CORS(app)
+# Configurable CORS: limita orígenes en producción usando la variable de entorno
+# `CORS_ORIGINS`. Por defecto permite todos ('*') para facilitar pruebas.
+import os as _os
+_cors_origins = _os.getenv('CORS_ORIGINS', '*')
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.auth import generate_token
