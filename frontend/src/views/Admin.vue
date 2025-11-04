@@ -19,20 +19,15 @@
 </template>
 
 <script>
+import auth from '../utils/auth.js'
+
 export default {
   name: 'Admin',
   methods: {
     logout() {
-      const auth = require('../utils/auth.js').default
       auth.clearSession()
       this.$router.push('/')
     }
   }
-}
-</script>
-
-<script>
-export default {
-  name: 'Admin'
 }
 </script>
