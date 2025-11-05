@@ -126,8 +126,9 @@ export default {
       const session = auth.getSession()
       if (!session.user_id) return
       try {
+        const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
         const headers = { ...auth.authHeaders() }
-        const res = await fetch(`/api/rutinas/${session.user_id}`, { headers })
+        const res = await fetch(`${base}/api/rutinas/${session.user_id}`, { headers })
         if (!res.ok) throw new Error('error fetching')
         this.rutinas = await res.json()
       } catch (e) {
@@ -145,10 +146,11 @@ export default {
         alert('No autenticado')
         return
       }
+      const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
       const payload = { ...this.form, entrenador_id: session.user_id }
       try {
         const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
-        const res = await fetch('/api/rutinas', {
+        const res = await fetch(`${base}/api/rutinas`, {
           method: 'POST',
           headers,
           body: JSON.stringify(payload)
@@ -174,7 +176,7 @@ export default {
       if (!confirm('¿Eliminar rutina?')) return
       const session = auth.getSession()
       try {
-  const res = await fetch(`/api/rutinas/${id}`, { method: 'DELETE', headers: auth.authHeaders() })
+  const res = await fetch(`${base}/api/rutinas/${id}`, { method: 'DELETE', headers: auth.authHeaders() })
         if (!res.ok) {
           const err = await res.json()
           alert('Error: ' + (err.error || JSON.stringify(err)))
@@ -201,7 +203,7 @@ export default {
       const session = auth.getSession()
       try {
   const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
-  const res = await fetch(`/api/rutinas/${id}`, { method: 'PUT', headers, body: JSON.stringify(this.editForm) })
+  const res = await fetch(`${base}/api/rutinas/${id}`, { method: 'PUT', headers, body: JSON.stringify(this.editForm) })
         if (!res.ok) {
           const err = await res.json()
           alert('Error: ' + (err.error || JSON.stringify(err)))
