@@ -426,6 +426,37 @@ def admin_delete_usuario(usuario_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+@app.route('/api/admin/usuarios/<int:usuario_id>/create_cliente', methods=['POST'])
+@jwt_required
+def admin_create_cliente(usuario_id):
+	"""Crea una fila Cliente para el usuario dado si no existe.
+
+	Endpoint protegido: solo role == 'admin'. Útil para provisionar clientes
+	en producción cuando el seed no creó la fila cliente.
+	"""
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		from database.database import Usuario, Cliente
+		user = Usuario.query.filter_by(id=usuario_id).first()
+		if not user:
+			return jsonify({'error': 'user not found'}), 404
+
+		existing = Cliente.query.filter_by(usuario_id=user.id).first()
+		if existing:
+			return jsonify({'message': 'cliente already exists', 'cliente_id': existing.id}), 200
+
+		cliente = Cliente(usuario_id=user.id)
+		db.session.add(cliente)
+		db.session.commit()
+		return jsonify({'message': 'cliente creado', 'cliente_id': cliente.id}), 201
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/admin/metrics', methods=['GET'])
 @jwt_required
 def admin_metrics():
