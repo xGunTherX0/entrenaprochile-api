@@ -108,8 +108,8 @@ db = db_instance
 
 # Importa modelos después de inicializar db para evitar importación circular
 with app.app_context():
-	from database.database import Usuario, Cliente, Entrenador  # noqa: F401
-	from database.database import Rutina  # noqa: F401
+		from database.database import Usuario, Cliente, Entrenador, Medicion  # noqa: F401
+		from database.database import Rutina  # noqa: F401
 	from backend.auth import jwt_required
 
 	# --- Seed: crear usuario administrador por defecto si no existe ---
