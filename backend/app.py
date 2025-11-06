@@ -476,6 +476,45 @@ def admin_metrics():
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+@app.route('/api/admin/fix_schema', methods=['POST'])
+@jwt_required
+def admin_fix_schema():
+	"""Intenta arreglar problemas de esquema comunes en producción.
+
+	- Ejecuta `db.create_all()` para crear tablas que falten.
+	- Intenta añadir la columna `entrenador_id` en `rutinas` si falta.
+	- Intenta añadir una FK simple hacia `entrenadores` (silenciosamente si ya existe).
+
+	Este endpoint requiere role == 'admin'. Está pensado para uso puntual
+	en despliegues donde la base de datos quedó desincronizada.
+	"""
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		with app.app_context():
+			# crear tablas que falten (no altera tablas existentes)
+			db.create_all()
+			# añadir columna entrenador_id si no existe (Postgres supports IF NOT EXISTS)
+			try:
+				db.session.execute('ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS entrenador_id INTEGER')
+			except Exception:
+				# ignore
+				pass
+			# intentar añadir constraint FK (si ya existe fallará y lo ignoramos)
+			try:
+				db.session.execute('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)')
+			except Exception:
+				# ignore
+				pass
+			db.session.commit()
+		return jsonify({'message': 'schema fix attempted'}), 200
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'schema fix failed', 'detail': str(e)}), 500
+
+
 # Dev-only helper: promover un usuario a Entrenador
 # Solo está habilitado si se define la variable de entorno DEV_PROMOTE_SECRET.
 # Uso: POST /api/dev/promote_entrenador  { "email": "user@test.local", "secret": "<secret>" }
