@@ -346,6 +346,105 @@ def eliminar_rutina(rutina_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+# ------------------ Admin endpoints (protected por role==admin) ------------------
+@app.route('/api/admin/usuarios', methods=['GET'])
+@jwt_required
+def admin_list_users():
+	# solo admin
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		from database.database import Usuario
+		users = Usuario.query.order_by(Usuario.creado_en.desc()).all()
+		ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
+		result = []
+		for u in users:
+			if u.email == ADMIN_EMAIL:
+				urole = 'admin'
+			elif getattr(u, 'entrenador', None):
+				urole = 'entrenador'
+			elif getattr(u, 'cliente', None):
+				urole = 'cliente'
+			else:
+				urole = 'usuario'
+			result.append({'id': u.id, 'email': u.email, 'nombre': u.nombre, 'creado_en': u.creado_en.isoformat(), 'role': urole})
+		return jsonify(result), 200
+	except Exception as e:
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/admin/usuarios/<int:usuario_id>/promote', methods=['POST'])
+@jwt_required
+def admin_promote_usuario(usuario_id):
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		from database.database import Usuario, Entrenador
+		user = Usuario.query.filter_by(id=usuario_id).first()
+		if not user:
+			return jsonify({'error': 'user not found'}), 404
+		existing = Entrenador.query.filter_by(usuario_id=user.id).first()
+		if existing:
+			return jsonify({'message': 'already entrenador', 'entrenador_id': existing.id}), 200
+		entrenador = Entrenador(usuario_id=user.id)
+		db.session.add(entrenador)
+		db.session.commit()
+		return jsonify({'message': 'promoted to entrenador', 'entrenador_id': entrenador.id}), 201
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/admin/usuarios/<int:usuario_id>', methods=['DELETE'])
+@jwt_required
+def admin_delete_usuario(usuario_id):
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		from database.database import Usuario, Cliente, Entrenador
+		user = Usuario.query.filter_by(id=usuario_id).first()
+		if not user:
+			return jsonify({'error': 'user not found'}), 404
+
+		# borrar relaciones primero para evitar FK
+		try:
+			Cliente.query.filter_by(usuario_id=user.id).delete()
+			Entrenador.query.filter_by(usuario_id=user.id).delete()
+			db.session.delete(user)
+			db.session.commit()
+			return jsonify({'message': 'usuario eliminado'}), 200
+		except Exception as e:
+			db.session.rollback()
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+	except Exception as e:
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/admin/metrics', methods=['GET'])
+@jwt_required
+def admin_metrics():
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		from database.database import Usuario, Cliente, Entrenador, Medicion, Rutina
+		total_users = Usuario.query.count()
+		total_clientes = Cliente.query.count()
+		total_entrenadores = Entrenador.query.count()
+		total_mediciones = Medicion.query.count()
+		total_rutinas = Rutina.query.count()
+		return jsonify({'total_users': total_users, 'total_clientes': total_clientes, 'total_entrenadores': total_entrenadores, 'total_mediciones': total_mediciones, 'total_rutinas': total_rutinas}), 200
+	except Exception as e:
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 # Dev-only helper: promover un usuario a Entrenador
 # Solo está habilitado si se define la variable de entorno DEV_PROMOTE_SECRET.
 # Uso: POST /api/dev/promote_entrenador  { "email": "user@test.local", "secret": "<secret>" }
