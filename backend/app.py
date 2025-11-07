@@ -540,29 +540,51 @@ def admin_fix_schema_v2():
 			if res:
 				return jsonify({'message': 'column already exists', 'column': res[0]}), 200
 
-			# Try to add the column (non-nullable deferred: add nullable to be safe)
-			try:
-				db.session.execute(text('ALTER TABLE rutinas ADD COLUMN entrenador_id INTEGER'))
-			except Exception as e:
-				# capture the error to return it below
-				db.session.rollback()
-				return jsonify({'error': 'failed to add column', 'detail': str(e)}), 500
+			# Add entrenador_id and other expected columns for rutinas if missing
+			expected = {
+				'entrenador_id': "INTEGER",
+				'nombre': "VARCHAR(200)",
+				'descripcion': "TEXT",
+				'nivel': "VARCHAR(50)",
+				'es_publica': "BOOLEAN",
+				'creado_en': "TIMESTAMP"
+			}
 
-			# Try to add FK constraint; ignore if fails
+			added = []
+			errors = []
+			for col, coltype in expected.items():
+				check_q = f"SELECT column_name FROM information_schema.columns WHERE table_name='rutinas' AND column_name='{col}'"
+				found = db.session.execute(text(check_q)).fetchone()
+				if found:
+					continue
+				# Compose ALTER for the column (use IF NOT EXISTS where supported)
+				try:
+					alter_sql = f"ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS {col} {coltype}"
+					db.session.execute(text(alter_sql))
+					added.append(col)
+				except Exception as e:
+					db.session.rollback()
+					errors.append({'column': col, 'error': str(e)})
+
+			# Try to add FK for entrenador_id
 			try:
-				db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
+				db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT IF NOT EXISTS fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
 			except Exception:
 				# not fatal
 				pass
 
-			db.session.commit()
+			# commit results
+			try:
+				db.session.commit()
+			except Exception as e:
+				db.session.rollback()
+				return jsonify({'error': 'failed to commit column changes', 'detail': str(e), 'errors': errors}), 500
 
-			# Confirm column now exists
-			res2 = db.session.execute(text(q)).fetchone()
-			if res2:
-				return jsonify({'message': 'column created', 'column': res2[0]}), 200
+			# Report what happened
+			if errors:
+				return jsonify({'message': 'partial', 'added': added, 'errors': errors}), 200
 			else:
-				return jsonify({'error': 'column still missing after ALTER'}), 500
+				return jsonify({'message': 'columns ensured', 'added': added}), 200
 	except Exception as e:
 		db.session.rollback()
 		return jsonify({'error': 'schema fix v2 failed', 'detail': str(e)}), 500
