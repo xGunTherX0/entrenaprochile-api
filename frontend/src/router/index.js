@@ -4,6 +4,10 @@ import EntrenadorDashboard from '../views/EntrenadorDashboard.vue'
 import ClienteDashboard from '../views/ClienteDashboard.vue'
 import Home from '../views/Home.vue'
 import Admin from '../views/Admin.vue'
+// Admin child panels
+import AdminUsuarios from '../views/admin/Usuarios.vue'
+import AdminMetricas from '../views/admin/Metricas.vue'
+import AdminAprobar from '../views/admin/Aprobar.vue'
 
 const routes = [
   {
@@ -56,22 +60,14 @@ const routes = [
   }
   ,{
     path: '/admin',
-    redirect: '/admin/usuarios'
-  },
-  {
-    path: '/admin/usuarios',
-    name: 'AdminUsuarios',
-    component: Admin
-  },
-  {
-    path: '/admin/metricas',
-    name: 'AdminMetricas',
-    component: Admin
-  },
-  {
-    path: '/admin/aprobar',
-    name: 'AdminAprobar',
-    component: Admin
+    name: 'Admin',
+    component: Admin,
+    redirect: '/admin/usuarios',
+    children: [
+      { path: 'usuarios', name: 'AdminUsuarios', component: AdminUsuarios },
+      { path: 'metricas', name: 'AdminMetricas', component: AdminMetricas },
+      { path: 'aprobar', name: 'AdminAprobar', component: AdminAprobar }
+    ]
   }
 ]
 
