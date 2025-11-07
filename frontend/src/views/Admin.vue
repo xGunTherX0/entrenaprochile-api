@@ -4,13 +4,13 @@
       <h2 class="text-xl font-bold mb-4">Admin</h2>
       <ul>
         <li class="mb-2">
-          <button @click="select('usuarios')" :class="{'text-blue-600 font-semibold': activePanel==='usuarios'}" class="text-left w-full">Gestionar Usuarios</button>
+          <router-link to="/admin/usuarios" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='usuarios'}">Gestionar Usuarios</router-link>
         </li>
         <li class="mb-2">
-          <button @click="select('aprobar')" :class="{'text-blue-600 font-semibold': activePanel==='aprobar'}" class="text-left w-full">Aprobar Contenido</button>
+          <router-link to="/admin/aprobar" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='aprobar'}">Aprobar Contenido</router-link>
         </li>
         <li class="mb-2">
-          <button @click="select('metricas')" :class="{'text-blue-600 font-semibold': activePanel==='metricas'}" class="text-left w-full">Métricas</button>
+          <router-link to="/admin/metricas" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='metricas'}">Métricas</router-link>
         </li>
       </ul>
       <div class="mt-6">
@@ -20,72 +20,10 @@
       <main class="flex-1 p-6">
       <h1 class="text-2xl font-bold">Admin Dashboard</h1>
       
-      <!-- Panels: show only the active one -->
-      <section v-if="activePanel === 'metricas'" class="mt-6">
-        <h2 class="text-lg font-semibold">Métricas</h2>
-        <div v-if="metrics" class="grid grid-cols-3 gap-4 mt-3">
-          <div class="p-4 bg-white rounded shadow">
-            <div class="text-sm text-gray-500">Usuarios</div>
-            <div class="text-2xl font-bold">{{ metrics.total_users }}</div>
-          </div>
-          <div class="p-4 bg-white rounded shadow">
-            <div class="text-sm text-gray-500">Clientes</div>
-            <div class="text-2xl font-bold">{{ metrics.total_clientes }}</div>
-          </div>
-          <div class="p-4 bg-white rounded shadow">
-            <div class="text-sm text-gray-500">Entrenadores</div>
-            <div class="text-2xl font-bold">{{ metrics.total_entrenadores }}</div>
-          </div>
-        </div>
-        <div v-else class="mt-3 text-sm text-gray-500">
-          <div v-if="loadingMetrics">Cargando métricas...</div>
-          <div v-else-if="metricsError" class="text-red-600">{{ metricsError }}</div>
-          <div v-else class="text-gray-500">Cargando métricas...</div>
-        </div>
-      </section>
-
-      <section v-if="activePanel === 'usuarios'" class="mt-8">
-        <h2 class="text-lg font-semibold">Usuarios</h2>
-        <div class="mt-3">
-          <button @click="showCreateModal = true" class="px-3 py-2 bg-green-600 text-white rounded">Crear Usuario</button>
-        </div>
-        <div class="mt-3 bg-white rounded shadow overflow-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th class="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="u in users" :key="u.id">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.id }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.email }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.nombre }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.role }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button v-if="u.role !== 'entrenador' && u.role !== 'admin'" @click="promote(u.id)" class="text-indigo-600 hover:text-indigo-900 mr-3">Promover</button>
-                  <button @click="remove(u.id)" class="text-red-600 hover:text-red-900">Borrar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</div>
-      </section>
-
-      <section v-if="activePanel === 'aprobar'" class="mt-8">
-        <h2 class="text-lg font-semibold">Aprobar Contenido</h2>
-        <div class="mt-3 bg-white rounded shadow p-4">
-          <p class="text-sm text-gray-600">Aquí puedes revisar y aprobar contenido enviado por usuarios. (Placeholder)</p>
-          <div class="mt-3">
-            <button class="px-3 py-2 bg-indigo-600 text-white rounded" @click.prevent="$router.push('/admin/aprobar')">Ir a aprobación (vista)</button>
-          </div>
-        </div>
-      </section>
+      <!-- router outlet for admin child panels -->
+      <div class="w-full">
+        <router-view @refresh-metrics="loadMetrics"></router-view>
+      </div>
 
       <!-- Create user modal -->
       <div v-if="showCreateModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
