@@ -581,6 +581,83 @@ def admin_metrics():
 	return jsonify(result), 200
 
 
+@app.route('/api/admin/usuarios', methods=['POST'])
+@jwt_required
+def admin_create_user():
+	"""Crear un Usuario + relacione(s) en una sola transacción.
+
+	Request JSON: { email, nombre, password, role }
+	role: 'usuario' (default), 'cliente', 'entrenador'
+	Solo admin puede ejecutar este endpoint.
+	"""
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	data = request.get_json() or {}
+	email = data.get('email')
+	password = data.get('password')
+	nombre = data.get('nombre') or email
+	desired_role = data.get('role', 'usuario')
+
+	if not email or not password:
+		return jsonify({'error': 'email and password required'}), 400
+
+	try:
+		from database.database import Usuario, Cliente, Entrenador
+
+		existing = Usuario.query.filter_by(email=email).first()
+		if existing:
+			return jsonify({'error': 'user exists'}), 409
+
+		hashed = generate_password_hash(password)
+		user = Usuario(email=email, nombre=nombre, hashed_password=hashed)
+		db.session.add(user)
+		# flush so user.id is available for FK relations
+		db.session.flush()
+
+		# create relations according to desired_role
+		created_rel = []
+		if desired_role in ('cliente', 'usuario', 'admin'):
+			try:
+				cliente = Cliente(usuario_id=user.id)
+				db.session.add(cliente)
+				created_rel.append('cliente')
+			except Exception:
+				db.session.rollback()
+				return jsonify({'error': 'failed creating cliente relation'}), 500
+		if desired_role == 'entrenador':
+			try:
+				entrenador = Entrenador(usuario_id=user.id)
+				db.session.add(entrenador)
+				created_rel.append('entrenador')
+			except Exception:
+				db.session.rollback()
+				return jsonify({'error': 'failed creating entrenador relation'}), 500
+
+		try:
+			db.session.commit()
+		except Exception as e:
+			db.session.rollback()
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+		# determine role string for response
+		ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
+		if user.email == ADMIN_EMAIL:
+			resp_role = 'admin'
+		elif 'entrenador' in created_rel:
+			resp_role = 'entrenador'
+		elif 'cliente' in created_rel:
+			resp_role = 'cliente'
+		else:
+			resp_role = 'usuario'
+
+		return jsonify({'message': 'user created', 'id': user.id, 'role': resp_role}), 201
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/admin/fix_schema', methods=['POST'])
 @jwt_required
 def admin_fix_schema():

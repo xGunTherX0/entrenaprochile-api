@@ -39,6 +39,9 @@
 
       <section class="mt-8">
         <h2 class="text-lg font-semibold">Usuarios</h2>
+        <div class="mt-3">
+          <button @click="showCreateModal = true" class="px-3 py-2 bg-green-600 text-white rounded">Crear Usuario</button>
+        </div>
         <div class="mt-3 bg-white rounded shadow overflow-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -66,6 +69,38 @@
         </div>
         <div v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</div>
       </section>
+      
+      <!-- Create user modal -->
+      <div v-if="showCreateModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
+        <div class="bg-white rounded shadow-lg w-96 p-6">
+          <h3 class="text-lg font-semibold mb-3">Crear Usuario</h3>
+          <div class="mb-2">
+            <label class="block text-sm">Email</label>
+            <input v-model="newUser.email" class="w-full border rounded px-2 py-1" />
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm">Nombre</label>
+            <input v-model="newUser.nombre" class="w-full border rounded px-2 py-1" />
+          </div>
+          <div class="mb-2">
+            <label class="block text-sm">Password</label>
+            <input type="password" v-model="newUser.password" class="w-full border rounded px-2 py-1" />
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm">Rol</label>
+            <select v-model="newUser.role" class="w-full border rounded px-2 py-1">
+              <option value="usuario">Usuario</option>
+              <option value="cliente">Cliente</option>
+              <option value="entrenador">Entrenador</option>
+            </select>
+          </div>
+          <div class="flex justify-end">
+            <button @click="closeModal" class="mr-2 px-3 py-2 border rounded">Cancelar</button>
+            <button @click="createUser" :disabled="creating" class="px-3 py-2 bg-blue-600 text-white rounded">{{ creating ? 'Creando...' : 'Crear' }}</button>
+          </div>
+          <div v-if="createError" class="mt-3 text-sm text-red-600">{{ createError }}</div>
+        </div>
+      </div>
     </main>
   </div>
 </template>
@@ -83,7 +118,12 @@ export default {
       metrics: null,
       metricsError: null,
       error: null,
-      loadingMetrics: false
+      loadingMetrics: false,
+      // create user modal state
+      showCreateModal: false,
+      newUser: { email: '', nombre: '', password: '', role: 'usuario' },
+      creating: false,
+      createError: null
     }
   },
   mounted() {
@@ -161,6 +201,56 @@ export default {
         this.error = e.message || String(e)
       }
     }
+    closeModal() {
+      this.showCreateModal = false
+      this.createError = null
+      this.newUser = { email: '', nombre: '', password: '', role: 'usuario' }
+      this.creating = false
+    },
+    async createUser() {
+      this.createError = null
+      if (!this.newUser.email || !this.newUser.password) {
+        this.createError = 'Email y password son obligatorios'
+        return
+      }
+      this.creating = true
+      try {
+        // Register endpoint (public) creates Usuario + Cliente by default
+        const payload = { email: this.newUser.email, nombre: this.newUser.nombre || this.newUser.email, password: this.newUser.password }
+        const res = await fetch(`${API_BASE}/api/usuarios/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          this.createError = j.error || j.message || `Error creando usuario (${res.status})`
+          return
+        }
+        const body = await res.json()
+        const newId = body.id
+
+        // If admin wants specific role, call admin endpoints to provision
+        if (this.newUser.role === 'cliente') {
+          const r2 = await fetch(`${API_BASE}/api/admin/usuarios/${newId}/create_cliente`, { method: 'POST', headers: auth.authHeaders() })
+          if (!r2.ok) {
+            const j2 = await r2.json().catch(() => ({}))
+            this.createError = `Usuario creado pero fallo al crear cliente: ${j2.error || j2.detail || r2.status}`
+          }
+        } else if (this.newUser.role === 'entrenador') {
+          const r3 = await fetch(`${API_BASE}/api/admin/usuarios/${newId}/promote`, { method: 'POST', headers: auth.authHeaders() })
+          if (!r3.ok) {
+            const j3 = await r3.json().catch(() => ({}))
+            this.createError = `Usuario creado pero fallo al crear entrenador: ${j3.error || j3.detail || r3.status}`
+          }
+        }
+
+        await this.loadUsers()
+        await this.loadMetrics()
+        // close if no createError, otherwise keep modal open to show message
+        if (!this.createError) this.closeModal()
+      } catch (e) {
+        this.createError = e.message || String(e)
+      } finally {
+        this.creating = false
+      }
+    },
   }
 }
 </script>
