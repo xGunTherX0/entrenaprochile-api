@@ -13,12 +13,40 @@ const routes = [
   }
   ,{
     path: '/entrenador',
-    name: 'Entrenador',
+    redirect: '/entrenador/rutinas'
+  },
+  {
+    path: '/entrenador/rutinas',
+    name: 'EntrenadorRutinas',
+    component: EntrenadorDashboard
+  },
+  {
+    path: '/entrenador/planes',
+    name: 'EntrenadorPlanes',
+    component: EntrenadorDashboard
+  },
+  {
+    path: '/entrenador/publicar',
+    name: 'EntrenadorPublicar',
     component: EntrenadorDashboard
   },
   {
     path: '/cliente',
-    name: 'Cliente',
+    redirect: '/cliente/mediciones'
+  },
+  {
+    path: '/cliente/mediciones',
+    name: 'ClienteMediciones',
+    component: ClienteDashboard
+  },
+  {
+    path: '/cliente/explorar',
+    name: 'ClienteExplorar',
+    component: ClienteDashboard
+  },
+  {
+    path: '/cliente/planes',
+    name: 'ClientePlanes',
     component: ClienteDashboard
   },
   {
@@ -28,7 +56,21 @@ const routes = [
   }
   ,{
     path: '/admin',
-    name: 'Admin',
+    redirect: '/admin/usuarios'
+  },
+  {
+    path: '/admin/usuarios',
+    name: 'AdminUsuarios',
+    component: Admin
+  },
+  {
+    path: '/admin/metricas',
+    name: 'AdminMetricas',
+    component: Admin
+  },
+  {
+    path: '/admin/aprobar',
+    name: 'AdminAprobar',
     component: Admin
   }
 ]
@@ -39,10 +81,10 @@ const router = createRouter({
 })
 
 // Rutas protegidas: cualquiera que no sea login ('/') requiere sesión
-const protectedPaths = ['/entrenador', '/cliente', '/admin', '/home']
+const protectedPrefixes = ['/entrenador', '/cliente', '/admin', '/home']
 
 router.beforeEach((to, from, next) => {
-  if (protectedPaths.includes(to.path)) {
+  if (protectedPrefixes.some(p => to.path.startsWith(p))) {
     const role = localStorage.getItem('user_role')
     const userId = localStorage.getItem('user_id')
     if (!role || !userId) {

@@ -136,7 +136,7 @@ export default {
     },
 
     select(panel) {
-      try { this.$router.push({ path: this.$route.path, hash: `#${panel}` }) } catch (e) {}
+      try { this.$router.push(`/entrenador/${panel}`) } catch (e) {}
       this.activePanel = panel
     },
 
@@ -240,13 +240,14 @@ export default {
     this.editForm = { nombre: '', nivel: 'Básico', es_publica: false }
   },
   mounted() {
-    // initialize from hash
-    const h = (this.$route && this.$route.hash) ? this.$route.hash.replace('#', '') : ''
-    if (h) this.activePanel = h
+    // initialize from route path (e.g. /entrenador/rutinas)
+    const parts = (this.$route && this.$route.path) ? this.$route.path.split('/') : []
+    const panel = parts[2] || 'rutinas'
+    if (panel) this.activePanel = panel
     if (this.activePanel === 'rutinas') this.fetchRutinas()
-    this.$watch(() => this.$route.hash, (newHash) => {
-      const panel = (newHash || '').replace('#', '')
-      if (panel) this.select(panel)
+    this.$watch(() => this.$route.path, (newPath) => {
+      const p = (newPath || '').split('/')[2] || 'rutinas'
+      if (p) this.select(p)
     })
   }
 }

@@ -146,17 +146,18 @@ export default {
     }
   },
   mounted() {
-    // Initialize active panel from URL hash if present
-    const h = (this.$route && this.$route.hash) ? this.$route.hash.replace('#', '') : ''
-    if (h) this.activePanel = h
+    // Initialize active panel from the route path (e.g. /admin/usuarios)
+    const parts = (this.$route && this.$route.path) ? this.$route.path.split('/') : []
+    const panel = parts[2] || 'usuarios'
+    if (panel) this.activePanel = panel
     // Load data for the active panel
     if (this.activePanel === 'usuarios') this.loadUsers()
     if (this.activePanel === 'metricas') this.loadMetrics()
 
-    // watch hash changes
-    this.$watch(() => this.$route.hash, (newHash) => {
-      const panel = (newHash || '').replace('#', '')
-      if (panel) this.select(panel)
+    // watch route changes (path) to react to navigation
+    this.$watch(() => this.$route.path, (newPath) => {
+      const p = (newPath || '').split('/')[2] || 'usuarios'
+      if (p) this.select(p)
     })
   },
   methods: {
@@ -215,8 +216,8 @@ export default {
       }
     },
     select(panel) {
-      // update URL hash so it's shareable
-      try { this.$router.push({ path: this.$route.path, hash: `#${panel}` }) } catch (e) {}
+      // navigate to a real route so the URL reflects the selected panel
+      try { this.$router.push(`/admin/${panel}`) } catch (e) {}
       this.activePanel = panel
       // lazy load panel data
       if (panel === 'usuarios') this.loadUsers()

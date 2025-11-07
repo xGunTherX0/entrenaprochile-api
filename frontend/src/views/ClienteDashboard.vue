@@ -153,12 +153,13 @@ export default {
     }
   },
   mounted() {
-    const h = (this.$route && this.$route.hash) ? this.$route.hash.replace('#', '') : ''
-    if (h) this.activePanel = h
+    const parts = (this.$route && this.$route.path) ? this.$route.path.split('/') : []
+    const panel = parts[2] || 'mediciones'
+    if (panel) this.activePanel = panel
     if (this.activePanel === 'mediciones') this.fetchMediciones()
-    this.$watch(() => this.$route.hash, (newHash) => {
-      const panel = (newHash || '').replace('#', '')
-      if (panel) this.select(panel)
+    this.$watch(() => this.$route.path, (newPath) => {
+      const p = (newPath || '').split('/')[2] || 'mediciones'
+      if (p) this.select(p)
     })
   }
 }
