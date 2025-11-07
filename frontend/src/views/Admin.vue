@@ -1,20 +1,27 @@
 <template>
   <div class="min-h-screen flex bg-gray-50">
-    <nav class="w-64 bg-white border-r p-4">
+      <nav class="w-64 bg-white border-r p-4">
       <h2 class="text-xl font-bold mb-4">Admin</h2>
       <ul>
-        <li class="mb-2"><a href="#" class="text-blue-600">Gestionar Usuarios</a></li>
-        <li class="mb-2"><a href="#" class="text-blue-600">Aprobar Contenido</a></li>
-        <li class="mb-2"><a href="#" class="text-blue-600">Métricas</a></li>
+        <li class="mb-2">
+          <button @click="select('usuarios')" :class="{'text-blue-600 font-semibold': activePanel==='usuarios'}" class="text-left w-full">Gestionar Usuarios</button>
+        </li>
+        <li class="mb-2">
+          <button @click="select('aprobar')" :class="{'text-blue-600 font-semibold': activePanel==='aprobar'}" class="text-left w-full">Aprobar Contenido</button>
+        </li>
+        <li class="mb-2">
+          <button @click="select('metricas')" :class="{'text-blue-600 font-semibold': activePanel==='metricas'}" class="text-left w-full">Métricas</button>
+        </li>
       </ul>
       <div class="mt-6">
         <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
       </div>
     </nav>
-    <main class="flex-1 p-6">
+      <main class="flex-1 p-6">
       <h1 class="text-2xl font-bold">Admin Dashboard</h1>
-
-      <section class="mt-6">
+      
+      <!-- Panels: show only the active one -->
+      <section v-if="activePanel === 'metricas'" class="mt-6">
         <h2 class="text-lg font-semibold">Métricas</h2>
         <div v-if="metrics" class="grid grid-cols-3 gap-4 mt-3">
           <div class="p-4 bg-white rounded shadow">
@@ -37,7 +44,7 @@
         </div>
       </section>
 
-      <section class="mt-8">
+      <section v-if="activePanel === 'usuarios'" class="mt-8">
         <h2 class="text-lg font-semibold">Usuarios</h2>
         <div class="mt-3">
           <button @click="showCreateModal = true" class="px-3 py-2 bg-green-600 text-white rounded">Crear Usuario</button>
@@ -69,7 +76,17 @@
         </div>
         <div v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</div>
       </section>
-      
+
+      <section v-if="activePanel === 'aprobar'" class="mt-8">
+        <h2 class="text-lg font-semibold">Aprobar Contenido</h2>
+        <div class="mt-3 bg-white rounded shadow p-4">
+          <p class="text-sm text-gray-600">Aquí puedes revisar y aprobar contenido enviado por usuarios. (Placeholder)</p>
+          <div class="mt-3">
+            <button class="px-3 py-2 bg-indigo-600 text-white rounded" @click.prevent="$router.push('/admin/aprobar')">Ir a aprobación (vista)</button>
+          </div>
+        </div>
+      </section>
+
       <!-- Create user modal -->
       <div v-if="showCreateModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
         <div class="bg-white rounded shadow-lg w-96 p-6">
@@ -119,6 +136,8 @@ export default {
       metricsError: null,
       error: null,
       loadingMetrics: false,
+      // active panel: 'usuarios' | 'aprobar' | 'metricas'
+      activePanel: 'usuarios',
       // create user modal state
       showCreateModal: false,
       newUser: { email: '', nombre: '', password: '', role: 'usuario' },
@@ -184,6 +203,12 @@ export default {
       } catch (e) {
         this.error = e.message || String(e)
       }
+    },
+    select(panel) {
+      this.activePanel = panel
+      // lazy load panel data
+      if (panel === 'usuarios') this.loadUsers()
+      if (panel === 'metricas') this.loadMetrics()
     },
     async remove(id) {
       this.error = null
