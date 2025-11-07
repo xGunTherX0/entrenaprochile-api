@@ -15,9 +15,9 @@
       <h1 class="text-2xl font-bold">Cliente Dashboard</h1>
 
       <section v-if="activePanel === 'mediciones'">
-      <p class="mt-4">Registro de Mediciones</p>
+        <p class="mt-4">Registro de Mediciones</p>
 
-      <div class="mt-6 max-w-md bg-white p-4 rounded shadow">
+        <div class="mt-6 max-w-md bg-white p-4 rounded shadow">
         <form @submit.prevent="submitMedicion">
           <div class="mb-3">
             <label class="block text-sm">Peso (kg)</label>
@@ -36,8 +36,9 @@
             <div v-if="msg" class="text-sm text-green-600">{{ msg }}</div>
           </div>
         </form>
-      </div>
+        </div>
 
+      </section>
 
       <section v-if="activePanel === 'explorar'" class="mt-6">
         <h2 class="text-lg font-semibold mb-2">Explorar Rutinas</h2>
@@ -70,7 +71,7 @@
             </tr>
           </tbody>
         </table>
-      </div>
+      </section>
 
       <div class="mt-8 bg-white p-4 rounded shadow">
         <h2 class="text-lg font-semibold mb-2">Evolución de Peso</h2>
