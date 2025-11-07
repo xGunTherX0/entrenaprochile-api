@@ -1,5 +1,10 @@
+# This is a Python file for the Flask application.
+# It contains various endpoints for user management and routines.
+# Ensure to configure the environment variables before running.
 import os
 from flask import Flask, jsonify, request
+# Mejor configuración CORS: permitimos los encabezados comunes (Authorization, Content-Type)
+# y soportamos credenciales si es necesario. `CORS_ORIGINS` puede venir desde entorno.
 from flask_cors import CORS
 # Asumiendo que usas Flask-SQLAlchemy para el ORM
 
@@ -10,7 +15,13 @@ app = Flask(__name__)
 # `CORS_ORIGINS`. Por defecto permite todos ('*') para facilitar pruebas.
 import os as _os
 _cors_origins = _os.getenv('CORS_ORIGINS', '*')
-CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
+# Configure CORS explicitly so preflight (OPTIONS) respuestas incluyan los encabezados necesarios
+app.config.setdefault('CORS_HEADERS', 'Content-Type,Authorization')
+CORS(app,
+	resources={r"/api/*": {"origins": _cors_origins}},
+	supports_credentials=True,
+	allow_headers=["Content-Type", "Authorization"],
+	methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.auth import generate_token
@@ -91,8 +102,13 @@ if DATABASE_URL:
 	print("Modo Producción: Conectando a PostgreSQL")
 else:
 	# Si no se encuentra la variable (estás en tu PC), usa SQLite (Modo Desarrollo)
-	SQLALCHEMY_URI = 'sqlite:///../database/entrenapro.db' 
-	print("Modo Desarrollo: Conectando a SQLite")
+	# Construimos una ruta absoluta al archivo dentro del repo para evitar
+	# problemas dependientes del directorio de trabajo.
+	repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+	db_file = os.path.join(repo_root, 'database', 'entrenapro.db')
+	# SQLite URIs en Windows necesitan / separadores, y triple slash para ruta absoluta
+	SQLALCHEMY_URI = f"sqlite:///{db_file.replace('\\', '/')}"
+	print(f"Modo Desarrollo: Conectando a SQLite ({SQLALCHEMY_URI})")
 
 # 3. Asigna la URI a la configuración de la aplicación
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_URI
@@ -260,14 +276,64 @@ def crear_rutina():
 	if not nombre:
 		return jsonify({'error': 'nombre required'}), 400
 
+	rutina = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
+	db.session.add(rutina)
 	try:
-		rutina = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
-		db.session.add(rutina)
 		db.session.commit()
 		return jsonify({'message': 'rutina creada', 'rutina': {'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': rutina.creado_en.isoformat()}}), 201
 	except Exception as e:
+		# Si falla por columna faltante en la tabla rutinas, intentamos aplicar
+		# un arreglo rápido y reintentar una vez. Esto ayuda en producción
+		# cuando el esquema está parcialmente desincronizado.
+		err_str = str(e)
+		if 'UndefinedColumn' in err_str or 'column "' in err_str and 'does not exist' in err_str:
+			try:
+				with app.app_context():
+					# asegurar tablas
+					db.create_all()
+					# asegurar columnas esperadas
+					expected_cols = {
+						'entrenador_id': 'INTEGER',
+						'nombre': 'VARCHAR(200)',
+						'descripcion': 'TEXT',
+						'nivel': 'VARCHAR(50)',
+						'es_publica': 'BOOLEAN',
+						'creado_en': 'TIMESTAMP'
+					}
+					for c, ttype in expected_cols.items():
+						try:
+							db.session.execute(text(f"ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS {c} {ttype}"))
+						except Exception:
+							# ignorar errores por now, seguiremos
+							pass
+					# intentar constraint FK
+					try:
+						db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT IF NOT EXISTS fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
+					except Exception:
+						pass
+					try:
+						db.session.commit()
+					except Exception:
+						db.session.rollback()
+					# limpiar sesión e intentar el INSERT otra vez
+					db.session.expunge_all()
+					try:
+						rutina2 = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
+						db.session.add(rutina2)
+						db.session.commit()
+						return jsonify({'message': 'rutina creada after repair', 'rutina': {'id': rutina2.id, 'nombre': rutina2.nombre, 'descripcion': rutina2.descripcion, 'nivel': rutina2.nivel, 'es_publica': rutina2.es_publica, 'creado_en': rutina2.creado_en.isoformat()}}), 201
+					except Exception as e2:
+						db.session.rollback()
+						# si sigue fallando, volver al error original
+						return jsonify({'error': 'db error after repair', 'detail': str(e2), 'original': err_str}), 500
+			except Exception:
+				# fallo al intentar reparar, devolvemos el error original
+				db.session.rollback()
+				return jsonify({'error': 'db error', 'detail': err_str}), 500
+			# no else here; fall through to outer rollback below if needed
+		# Error no relacionado con columna faltante
 		db.session.rollback()
-		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+		return jsonify({'error': 'db error', 'detail': err_str}), 500
 
 
 @app.route('/api/rutinas/<int:entrenador_usuario_id>', methods=['GET'])
