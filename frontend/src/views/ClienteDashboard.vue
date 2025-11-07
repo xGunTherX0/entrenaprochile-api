@@ -148,6 +148,19 @@ export default {
       }
     },
 
+    // Navegar entre paneles y sincronizar con la ruta
+    select(panel) {
+      if (!panel) return
+      this.activePanel = panel
+      // actualizar la URL para que sea shareable
+      try {
+        this.$router.push(`/cliente/${panel}`)
+      } catch (e) {
+        // ignore navigation errors
+      }
+      if (panel === 'mediciones') this.fetchMediciones()
+    },
+
     logout() {
       auth.clearSession()
       this.$router.push('/')
