@@ -531,16 +531,41 @@ def admin_metrics():
 	if role != 'admin':
 		return jsonify({'error': 'forbidden: admin only'}), 403
 
+	# Make metrics resilient: count each table separately and don't return 500
 	try:
 		from database.database import Usuario, Cliente, Entrenador, Medicion, Rutina
-		total_users = Usuario.query.count()
-		total_clientes = Cliente.query.count()
-		total_entrenadores = Entrenador.query.count()
-		total_mediciones = Medicion.query.count()
-		total_rutinas = Rutina.query.count()
-		return jsonify({'total_users': total_users, 'total_clientes': total_clientes, 'total_entrenadores': total_entrenadores, 'total_mediciones': total_mediciones, 'total_rutinas': total_rutinas}), 200
 	except Exception as e:
+		app.logger.exception('admin_metrics: failed importing models')
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+	errors = []
+	# helper to run a count safely
+	def _safe_count(obj, name):
+		try:
+			return obj.query.count()
+		except Exception as ex:
+			app.logger.exception(f'admin_metrics: count failed for {name}')
+			errors.append({'table': name, 'error': str(ex)})
+			return None
+
+	total_users = _safe_count(Usuario, 'usuarios')
+	total_clientes = _safe_count(Cliente, 'clientes')
+	total_entrenadores = _safe_count(Entrenador, 'entrenadores')
+	total_mediciones = _safe_count(Medicion, 'mediciones')
+	total_rutinas = _safe_count(Rutina, 'rutinas')
+
+	result = {
+		'total_users': total_users if total_users is not None else 0,
+		'total_clientes': total_clientes if total_clientes is not None else 0,
+		'total_entrenadores': total_entrenadores if total_entrenadores is not None else 0,
+		'total_mediciones': total_mediciones if total_mediciones is not None else 0,
+		'total_rutinas': total_rutinas if total_rutinas is not None else 0,
+	}
+	if errors:
+		# include a concise errors array to help debugging in the frontend logs
+		result['errors'] = errors
+
+	return jsonify(result), 200
 
 
 @app.route('/api/admin/fix_schema', methods=['POST'])
