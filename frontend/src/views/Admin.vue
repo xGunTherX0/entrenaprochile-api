@@ -200,7 +200,7 @@ export default {
       } catch (e) {
         this.error = e.message || String(e)
       }
-    }
+    },
     closeModal() {
       this.showCreateModal = false
       this.createError = null
