@@ -11,6 +11,19 @@ from flask_cors import CORS
 # Inicialización de la aplicación
 app = Flask(__name__)
 
+# Global JSON error handler: return JSON for unhandled exceptions so the frontend
+# receives a machine-readable error (detailed in development, generic in prod).
+@app.errorhandler(Exception)
+def handle_exception(e):
+	# If running in production (DATABASE_URL set) avoid leaking internal details.
+	is_prod = bool(os.getenv('DATABASE_URL'))
+	app.logger.exception('Unhandled exception')
+	if is_prod:
+		return jsonify({'error': 'internal server error'}), 500
+	else:
+		# In development return the exception string for easier debugging.
+		return jsonify({'error': 'internal', 'detail': str(e)}), 500
+
 # Configurable CORS: limita orígenes en producción usando la variable de entorno
 # `CORS_ORIGINS`. Por defecto permite todos ('*') para facilitar pruebas.
 import os as _os
