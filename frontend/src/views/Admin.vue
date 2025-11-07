@@ -30,7 +30,11 @@
             <div class="text-2xl font-bold">{{ metrics.total_entrenadores }}</div>
           </div>
         </div>
-        <div v-else class="mt-3 text-sm text-gray-500">Cargando métricas...</div>
+        <div v-else class="mt-3 text-sm text-gray-500">
+          <div v-if="loadingMetrics">Cargando métricas...</div>
+          <div v-else-if="metricsError" class="text-red-600">{{ metricsError }}</div>
+          <div v-else class="text-gray-500">Cargando métricas...</div>
+        </div>
       </section>
 
       <section class="mt-8">
@@ -77,7 +81,9 @@ export default {
     return {
       users: [],
       metrics: null,
-      error: null
+      metricsError: null,
+      error: null,
+      loadingMetrics: false
     }
   },
   mounted() {
@@ -104,12 +110,24 @@ export default {
       }
     },
     async loadMetrics() {
+      this.metricsError = null
+      this.loadingMetrics = true
       try {
         const res = await fetch(`${API_BASE}/api/admin/metrics`, { headers: auth.authHeaders() })
-        if (!res.ok) return
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          console.error('Metrics error', res.status, body)
+          this.metricsError = body.error || body.message || `Error cargando métricas (${res.status})`
+          this.metrics = null
+          return
+        }
         this.metrics = await res.json()
       } catch (e) {
-        // ignore metrics error for now
+        console.error('Metrics fetch failed', e)
+        this.metricsError = e.message || String(e)
+        this.metrics = null
+      } finally {
+        this.loadingMetrics = false
       }
     },
     async promote(id) {
