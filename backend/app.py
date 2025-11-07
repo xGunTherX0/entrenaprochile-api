@@ -534,11 +534,10 @@ def admin_fix_schema_v2():
 			# Ensure tables exist
 			db.create_all()
 
-			# Check information_schema for the column
-			q = "SELECT column_name FROM information_schema.columns WHERE table_name='rutinas' AND column_name='entrenador_id'"
-			res = db.session.execute(text(q)).fetchone()
-			if res:
-				return jsonify({'message': 'column already exists', 'column': res[0]}), 200
+			# Get existing columns for 'rutinas'
+			q_all = "SELECT column_name FROM information_schema.columns WHERE table_name='rutinas'"
+			rows = db.session.execute(text(q_all)).fetchall()
+			existing_cols = set([r[0] for r in rows])
 
 			# Add entrenador_id and other expected columns for rutinas if missing
 			expected = {
