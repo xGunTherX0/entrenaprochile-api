@@ -515,6 +515,58 @@ def admin_fix_schema():
 		return jsonify({'error': 'schema fix failed', 'detail': str(e)}), 500
 
 
+@app.route('/api/admin/fix_schema_v2', methods=['POST'])
+@jwt_required
+def admin_fix_schema_v2():
+	"""A stronger schema repair endpoint.
+
+	- Verifies whether columna `entrenador_id` existe en `rutinas` using
+	  information_schema and adds it if missing. Also attempts to add FK.
+	- Returns diagnostic info to help troubleshooting.
+	"""
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		with app.app_context():
+			# Ensure tables exist
+			db.create_all()
+
+			# Check information_schema for the column
+			q = "SELECT column_name FROM information_schema.columns WHERE table_name='rutinas' AND column_name='entrenador_id'"
+			res = db.session.execute(q).fetchone()
+			if res:
+				return jsonify({'message': 'column already exists', 'column': res[0]}), 200
+
+			# Try to add the column (non-nullable deferred: add nullable to be safe)
+			try:
+				db.session.execute('ALTER TABLE rutinas ADD COLUMN entrenador_id INTEGER')
+			except Exception as e:
+				# capture the error to return it below
+				db.session.rollback()
+				return jsonify({'error': 'failed to add column', 'detail': str(e)}), 500
+
+			# Try to add FK constraint; ignore if fails
+			try:
+				db.session.execute('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)')
+			except Exception:
+				# not fatal
+				pass
+
+			db.session.commit()
+
+			# Confirm column now exists
+			res2 = db.session.execute(q).fetchone()
+			if res2:
+				return jsonify({'message': 'column created', 'column': res2[0]}), 200
+			else:
+				return jsonify({'error': 'column still missing after ALTER'}), 500
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'schema fix v2 failed', 'detail': str(e)}), 500
+
+
 # Dev-only helper: promover un usuario a Entrenador
 # Solo está habilitado si se define la variable de entorno DEV_PROMOTE_SECRET.
 # Uso: POST /api/dev/promote_entrenador  { "email": "user@test.local", "secret": "<secret>" }
