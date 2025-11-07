@@ -146,8 +146,18 @@ export default {
     }
   },
   mounted() {
-    this.loadUsers()
-    this.loadMetrics()
+    // Initialize active panel from URL hash if present
+    const h = (this.$route && this.$route.hash) ? this.$route.hash.replace('#', '') : ''
+    if (h) this.activePanel = h
+    // Load data for the active panel
+    if (this.activePanel === 'usuarios') this.loadUsers()
+    if (this.activePanel === 'metricas') this.loadMetrics()
+
+    // watch hash changes
+    this.$watch(() => this.$route.hash, (newHash) => {
+      const panel = (newHash || '').replace('#', '')
+      if (panel) this.select(panel)
+    })
   },
   methods: {
     logout() {
@@ -205,6 +215,8 @@ export default {
       }
     },
     select(panel) {
+      // update URL hash so it's shareable
+      try { this.$router.push({ path: this.$route.path, hash: `#${panel}` }) } catch (e) {}
       this.activePanel = panel
       // lazy load panel data
       if (panel === 'usuarios') this.loadUsers()

@@ -3,9 +3,9 @@
     <nav class="w-64 bg-white border-r p-4">
       <h2 class="text-xl font-bold mb-4">Entrenador</h2>
       <ul>
-        <li class="mb-2"><a href="#" class="text-blue-600">Mis Rutinas</a></li>
-        <li class="mb-2"><a href="#" class="text-blue-600">Mis Planes Alimenticios</a></li>
-        <li class="mb-2"><a href="#" class="text-blue-600">Publicar Contenido</a></li>
+        <li class="mb-2"><button @click="select('rutinas')" :class="{'text-blue-600 font-semibold': activePanel==='rutinas'}" class="text-left w-full">Mis Rutinas</button></li>
+        <li class="mb-2"><button @click="select('planes')" :class="{'text-blue-600 font-semibold': activePanel==='planes'}" class="text-left w-full">Mis Planes Alimenticios</button></li>
+        <li class="mb-2"><button @click="select('publicar')" :class="{'text-blue-600 font-semibold': activePanel==='publicar'}" class="text-left w-full">Publicar Contenido</button></li>
       </ul>
       <div class="mt-6">
         <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
@@ -13,7 +13,8 @@
     </nav>
     <main class="flex-1 p-6">
       <h1 class="text-2xl font-bold">Entrenador Dashboard</h1>
-      <div class="mt-4">
+
+      <section v-if="activePanel === 'rutinas'" class="mt-4">
         <h2 class="text-xl font-semibold mb-2">Crear nueva Rutina</h2>
         <form @submit.prevent="createRutina" class="space-y-3 bg-white p-4 rounded shadow-sm max-w-lg">
           <div>
@@ -41,7 +42,7 @@
           </div>
         </form>
 
-        <h2 class="text-xl font-semibold mt-6 mb-2">Mis Rutinas</h2>
+  <h2 class="text-xl font-semibold mt-6 mb-2">Mis Rutinas</h2>
         <div class="bg-white p-4 rounded shadow-sm">
           <table class="min-w-full divide-y divide-gray-200">
             <thead>
@@ -95,7 +96,17 @@
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
+
+      <section v-if="activePanel === 'planes'" class="mt-4">
+        <h2 class="text-xl font-semibold">Mis Planes Alimenticios</h2>
+        <div class="bg-white p-4 rounded shadow-sm">(Placeholder para planes)</div>
+      </section>
+
+      <section v-if="activePanel === 'publicar'" class="mt-4">
+        <h2 class="text-xl font-semibold">Publicar Contenido</h2>
+        <div class="bg-white p-4 rounded shadow-sm">(Placeholder para publicar contenido)</div>
+      </section>
     </main>
   </div>
 </template>
@@ -114,12 +125,19 @@ export default {
         es_publica: false
       },
       rutinas: []
+      ,
+      activePanel: 'rutinas'
     }
   },
   methods: {
     logout() {
       auth.clearSession()
       this.$router.push('/')
+    },
+
+    select(panel) {
+      try { this.$router.push({ path: this.$route.path, hash: `#${panel}` }) } catch (e) {}
+      this.activePanel = panel
     },
 
     async fetchRutinas() {
@@ -222,7 +240,14 @@ export default {
     this.editForm = { nombre: '', nivel: 'Básico', es_publica: false }
   },
   mounted() {
-    this.fetchRutinas()
+    // initialize from hash
+    const h = (this.$route && this.$route.hash) ? this.$route.hash.replace('#', '') : ''
+    if (h) this.activePanel = h
+    if (this.activePanel === 'rutinas') this.fetchRutinas()
+    this.$watch(() => this.$route.hash, (newHash) => {
+      const panel = (newHash || '').replace('#', '')
+      if (panel) this.select(panel)
+    })
   }
 }
 </script>

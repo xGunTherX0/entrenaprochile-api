@@ -3,9 +3,9 @@
     <nav class="w-64 bg-white border-r p-4">
       <h2 class="text-xl font-bold mb-4">Cliente</h2>
       <ul>
-        <li class="mb-2"><a href="#" class="text-blue-600">Explorar Rutinas</a></li>
-        <li class="mb-2"><a href="#" class="text-blue-600">Mis Planes Nutricionales</a></li>
-        <li class="mb-2"><a href="#" class="text-blue-600">Registro de Mediciones</a></li>
+        <li class="mb-2"><button @click="select('explorar')" :class="{'text-blue-600 font-semibold': activePanel==='explorar'}" class="text-left w-full">Explorar Rutinas</button></li>
+        <li class="mb-2"><button @click="select('planes')" :class="{'text-blue-600 font-semibold': activePanel==='planes'}" class="text-left w-full">Mis Planes Nutricionales</button></li>
+        <li class="mb-2"><button @click="select('mediciones')" :class="{'text-blue-600 font-semibold': activePanel==='mediciones'}" class="text-left w-full">Registro de Mediciones</button></li>
       </ul>
       <div class="mt-6">
         <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
@@ -13,6 +13,8 @@
     </nav>
     <main class="flex-1 p-6">
       <h1 class="text-2xl font-bold">Cliente Dashboard</h1>
+
+      <section v-if="activePanel === 'mediciones'">
       <p class="mt-4">Registro de Mediciones</p>
 
       <div class="mt-6 max-w-md bg-white p-4 rounded shadow">
@@ -36,7 +38,18 @@
         </form>
       </div>
 
-      <div class="mt-8">
+
+      <section v-if="activePanel === 'explorar'" class="mt-6">
+        <h2 class="text-lg font-semibold mb-2">Explorar Rutinas</h2>
+        <div class="bg-white p-4 rounded shadow">(Placeholder para explorar rutinas)</div>
+      </section>
+
+      <section v-if="activePanel === 'planes'" class="mt-6">
+        <h2 class="text-lg font-semibold mb-2">Mis Planes Nutricionales</h2>
+        <div class="bg-white p-4 rounded shadow">(Placeholder para planes)</div>
+      </section>
+
+      <section v-if="activePanel === 'mediciones'" class="mt-8">
         <h2 class="text-lg font-semibold mb-2">Historial de Mediciones</h2>
         <div v-if="loadingList">Cargando...</div>
         <table v-else class="min-w-full bg-white shadow rounded">
@@ -84,6 +97,8 @@ export default {
       msg: '',
       mediciones: [],
       loadingList: false
+      ,
+      activePanel: 'mediciones'
     }
   },
   methods: {
@@ -138,7 +153,13 @@ export default {
     }
   },
   mounted() {
-    this.fetchMediciones()
+    const h = (this.$route && this.$route.hash) ? this.$route.hash.replace('#', '') : ''
+    if (h) this.activePanel = h
+    if (this.activePanel === 'mediciones') this.fetchMediciones()
+    this.$watch(() => this.$route.hash, (newHash) => {
+      const panel = (newHash || '').replace('#', '')
+      if (panel) this.select(panel)
+    })
   }
 }
 </script>
