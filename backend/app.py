@@ -321,9 +321,13 @@ def crear_rutina():
 							pass
 					# intentar constraint FK
 					try:
-						db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT IF NOT EXISTS fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
+						# Postgres doesn't support ADD CONSTRAINT IF NOT EXISTS.
+						# Check for existing constraint name and add only if missing.
+						has = db.session.execute(text("SELECT conname FROM pg_constraint WHERE conname='fk_rutinas_entrenador' LIMIT 1")).fetchone()
+						if not has:
+							db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
 					except Exception:
-						pass
+						db.session.rollback()
 					try:
 						db.session.commit()
 					except Exception:
@@ -359,11 +363,58 @@ def listar_rutinas(entrenador_usuario_id):
 	entrenador = Entrenador.query.filter_by(usuario_id=entrenador_usuario_id).first()
 	if not entrenador:
 		return jsonify({'error': 'entrenador not found'}), 404
+	# Ejecutar la consulta de forma resiliente: si faltan columnas en la tabla
+	# (problema observado en despliegues), intentamos reparar el esquema y reintentar.
+	try:
+		rutinas = Rutina.query.filter_by(entrenador_id=entrenador.id).order_by(Rutina.creado_en.desc()).all()
+	except Exception as e:
+		err_str = str(e)
+		app.logger.exception('listar_rutinas: query failed, attempting repair')
+		# Intentar reparaciones simples cuando la excepción sugiere columna faltante
+		if 'UndefinedColumn' in err_str or ('column' in err_str and 'does not exist' in err_str) or 'no such column' in err_str:
+			try:
+				with app.app_context():
+					db.create_all()
+					expected_cols = {
+						'entrenador_id': 'INTEGER',
+						'nombre': 'VARCHAR(200)',
+						'descripcion': 'TEXT',
+						'nivel': 'VARCHAR(50)',
+						'es_publica': 'BOOLEAN',
+						'creado_en': 'TIMESTAMP'
+					}
+					for c, ttype in expected_cols.items():
+						try:
+							db.session.execute(text(f"ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS {c} {ttype}"))
+						except Exception:
+							pass
+					try:
+						has = db.session.execute(text("SELECT conname FROM pg_constraint WHERE conname='fk_rutinas_entrenador' LIMIT 1")).fetchone()
+						if not has:
+							db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
+					except Exception:
+						db.session.rollback()
+					try:
+						db.session.commit()
+					except Exception:
+						db.session.rollback()
+			except Exception:
+				db.session.rollback()
+		# Reintentar la consulta una vez
+		try:
+			rutinas = Rutina.query.filter_by(entrenador_id=entrenador.id).order_by(Rutina.creado_en.desc()).all()
+		except Exception as e2:
+			app.logger.exception('listar_rutinas: still failing after repair')
+			return jsonify({'error': 'db error', 'detail': str(e2)}), 500
 
-	rutinas = Rutina.query.filter_by(entrenador_id=entrenador.id).order_by(Rutina.creado_en.desc()).all()
 	result = []
 	for r in rutinas:
-		result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': r.creado_en.isoformat()})
+		creado_val = None
+		try:
+			creado_val = r.creado_en.isoformat() if getattr(r, 'creado_en', None) else None
+		except Exception:
+			creado_val = None
+		result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': creado_val})
 	return jsonify(result), 200
 
 
@@ -768,6 +819,99 @@ def admin_fix_schema_v2():
 	except Exception as e:
 		db.session.rollback()
 		return jsonify({'error': 'schema fix v2 failed', 'detail': str(e)}), 500
+
+
+@app.route('/api/admin/diagnose_rutinas', methods=['GET'])
+@jwt_required
+def admin_diagnose_rutinas():
+	"""Devuelve diagnóstico sobre la tabla `rutinas` y sus columnas.
+	Útil para depurar problemas de esquema en producción.
+	Requiere role == 'admin'.
+	"""
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		with app.app_context():
+			# ¿Existe la tabla rutinas?
+			q_table = "SELECT to_regclass('public.rutinas')"
+			tbl = db.session.execute(text(q_table)).fetchone()
+			table_exists = bool(tbl and tbl[0])
+
+			# columnas existentes (Postgres information_schema)
+			cols_q = "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='rutinas'"
+			cols = []
+			try:
+				rows = db.session.execute(text(cols_q)).fetchall()
+				cols = [{'name': r[0], 'type': r[1]} for r in rows]
+			except Exception:
+				cols = []
+
+			# row count (si existe)
+			count = None
+			if table_exists:
+				try:
+					c = db.session.execute(text('SELECT COUNT(*) FROM rutinas')).fetchone()
+					count = int(c[0])
+				except Exception:
+					count = None
+
+			return jsonify({'table_exists': table_exists, 'row_count': count, 'columns': cols}), 200
+	except Exception as e:
+		app.logger.exception('admin_diagnose_rutinas failed')
+		return jsonify({'error': 'diagnose failed', 'detail': str(e)}), 500
+
+
+@app.route('/api/admin/repair_rutinas', methods=['POST'])
+@jwt_required
+def admin_repair_rutinas():
+	"""Intenta reparar la tabla rutinas: crear tabla si falta y añadir columnas esperadas.
+	Requiere role == 'admin'. Devuelve un resumen de acciones realizadas.
+	"""
+	role = request.jwt_payload.get('role')
+	if role != 'admin':
+		return jsonify({'error': 'forbidden: admin only'}), 403
+
+	try:
+		with app.app_context():
+			db.create_all()
+			expected = {
+				'entrenador_id': "INTEGER",
+				'nombre': "VARCHAR(200)",
+				'descripcion': "TEXT",
+				'nivel': "VARCHAR(50)",
+				'es_publica': "BOOLEAN",
+				'creado_en': "TIMESTAMP"
+			}
+			added = []
+			errors = []
+			for col, coltype in expected.items():
+				try:
+					db.session.execute(text(f"ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS {col} {coltype}"))
+					added.append(col)
+				except Exception as e:
+					db.session.rollback()
+					errors.append({'column': col, 'error': str(e)})
+
+			try:
+				has = db.session.execute(text("SELECT conname FROM pg_constraint WHERE conname='fk_rutinas_entrenador' LIMIT 1")).fetchone()
+				if not has:
+					db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
+			except Exception:
+				db.session.rollback()
+
+			try:
+				db.session.commit()
+			except Exception as e:
+				db.session.rollback()
+				return jsonify({'error': 'commit failed', 'detail': str(e), 'errors': errors}), 500
+
+			return jsonify({'message': 'repair attempted', 'added': added, 'errors': errors}), 200
+	except Exception as e:
+		db.session.rollback()
+		app.logger.exception('admin_repair_rutinas failed')
+		return jsonify({'error': 'repair failed', 'detail': str(e)}), 500
 
 
 # Dev-only helper: promover un usuario a Entrenador
