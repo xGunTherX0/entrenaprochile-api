@@ -14,6 +14,7 @@ CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.auth import generate_token
+from sqlalchemy import text
 
 
 @app.route('/api/usuarios/register', methods=['POST'])
@@ -535,7 +536,7 @@ def admin_fix_schema_v2():
 
 			# Check information_schema for the column
 			q = "SELECT column_name FROM information_schema.columns WHERE table_name='rutinas' AND column_name='entrenador_id'"
-			res = db.session.execute(q).fetchone()
+			res = db.session.execute(text(q)).fetchone()
 			if res:
 				return jsonify({'message': 'column already exists', 'column': res[0]}), 200
 
@@ -557,7 +558,7 @@ def admin_fix_schema_v2():
 			db.session.commit()
 
 			# Confirm column now exists
-			res2 = db.session.execute(q).fetchone()
+			res2 = db.session.execute(text(q)).fetchone()
 			if res2:
 				return jsonify({'message': 'column created', 'column': res2[0]}), 200
 			else:
