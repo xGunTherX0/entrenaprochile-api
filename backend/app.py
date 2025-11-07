@@ -499,13 +499,13 @@ def admin_fix_schema():
 			db.create_all()
 			# añadir columna entrenador_id si no existe (Postgres supports IF NOT EXISTS)
 			try:
-				db.session.execute('ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS entrenador_id INTEGER')
+				db.session.execute(text('ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS entrenador_id INTEGER'))
 			except Exception:
 				# ignore
 				pass
 			# intentar añadir constraint FK (si ya existe fallará y lo ignoramos)
 			try:
-				db.session.execute('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)')
+				db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
 			except Exception:
 				# ignore
 				pass
@@ -542,7 +542,7 @@ def admin_fix_schema_v2():
 
 			# Try to add the column (non-nullable deferred: add nullable to be safe)
 			try:
-				db.session.execute('ALTER TABLE rutinas ADD COLUMN entrenador_id INTEGER')
+				db.session.execute(text('ALTER TABLE rutinas ADD COLUMN entrenador_id INTEGER'))
 			except Exception as e:
 				# capture the error to return it below
 				db.session.rollback()
@@ -550,7 +550,7 @@ def admin_fix_schema_v2():
 
 			# Try to add FK constraint; ignore if fails
 			try:
-				db.session.execute('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)')
+				db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
 			except Exception:
 				# not fatal
 				pass
