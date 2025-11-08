@@ -295,62 +295,24 @@ def crear_rutina():
 		db.session.commit()
 		return jsonify({'message': 'rutina creada', 'rutina': {'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': rutina.creado_en.isoformat()}}), 201
 	except Exception as e:
-		# Si falla por columna faltante en la tabla rutinas, intentamos aplicar
-		# un arreglo rápido y reintentar una vez. Esto ayuda en producción
-		# cuando el esquema está parcialmente desincronizado.
+		# Fallback resilient handling: rollback, ensure tables, retry once.
 		err_str = str(e)
-		if 'UndefinedColumn' in err_str or 'column "' in err_str and 'does not exist' in err_str:
-			try:
-				with app.app_context():
-					# asegurar tablas
-					db.create_all()
-					# asegurar columnas esperadas
-					expected_cols = {
-						'entrenador_id': 'INTEGER',
-						'nombre': 'VARCHAR(200)',
-						'descripcion': 'TEXT',
-						'nivel': 'VARCHAR(50)',
-						'es_publica': 'BOOLEAN',
-						'creado_en': 'TIMESTAMP'
-					}
-					for c, ttype in expected_cols.items():
-						try:
-							db.session.execute(text(f"ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS {c} {ttype}"))
-						except Exception:
-							# ignorar errores por now, seguiremos
-							pass
-					# intentar constraint FK
-					try:
-						# Postgres doesn't support ADD CONSTRAINT IF NOT EXISTS.
-						# Check for existing constraint name and add only if missing.
-						has = db.session.execute(text("SELECT conname FROM pg_constraint WHERE conname='fk_rutinas_entrenador' LIMIT 1")).fetchone()
-						if not has:
-							db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
-					except Exception:
-						db.session.rollback()
-					try:
-						db.session.commit()
-					except Exception:
-						db.session.rollback()
-					# limpiar sesión e intentar el INSERT otra vez
-					db.session.expunge_all()
-					try:
-						rutina2 = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
-						db.session.add(rutina2)
-						db.session.commit()
-						return jsonify({'message': 'rutina creada after repair', 'rutina': {'id': rutina2.id, 'nombre': rutina2.nombre, 'descripcion': rutina2.descripcion, 'nivel': rutina2.nivel, 'es_publica': rutina2.es_publica, 'creado_en': rutina2.creado_en.isoformat()}}), 201
-					except Exception as e2:
-						db.session.rollback()
-						# si sigue fallando, volver al error original
-						return jsonify({'error': 'db error after repair', 'detail': str(e2), 'original': err_str}), 500
-			except Exception:
-				# fallo al intentar reparar, devolvemos el error original
-				db.session.rollback()
-				return jsonify({'error': 'db error', 'detail': err_str}), 500
-			# no else here; fall through to outer rollback below if needed
-		# Error no relacionado con columna faltante
+		app.logger.exception('crear_rutina failed: attempting lightweight repair')
 		db.session.rollback()
-		return jsonify({'error': 'db error', 'detail': err_str}), 500
+		try:
+			with app.app_context():
+				# try to ensure tables/columns exist (safe in dev and harmless in prod)
+				db.create_all()
+				# attempt to insert again
+				rutina2 = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
+				db.session.add(rutina2)
+				db.session.commit()
+				return jsonify({'message': 'rutina creada after repair', 'rutina': {'id': rutina2.id, 'nombre': rutina2.nombre, 'descripcion': rutina2.descripcion, 'nivel': rutina2.nivel, 'es_publica': rutina2.es_publica, 'creado_en': rutina2.creado_en.isoformat()}}), 201
+		except Exception as e2:
+			# second failure: return diagnostic information but avoid leaking too many internals in prod
+			db.session.rollback()
+			app.logger.exception('crear_rutina: repair attempt failed')
+			return jsonify({'error': 'db error', 'detail': str(e2)}), 500
 
 
 @app.route('/api/rutinas/<int:entrenador_usuario_id>', methods=['GET'])
