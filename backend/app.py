@@ -479,10 +479,19 @@ def listar_rutinas_publicas():
 			entrenador_id = getattr(rutina, 'entrenador_id', None)
 			entrenador_usuario_id = None
 			try:
+				# Be defensive: avoid touching relationship attributes that may trigger unexpected errors
 				ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
 				if ent:
 					entrenador_usuario_id = getattr(ent, 'usuario_id', None)
-					entrenador_nombre = getattr(ent.usuario, 'nombre', None) if getattr(ent, 'usuario', None) else None
+					if entrenador_usuario_id:
+						try:
+							# Query Usuario.nombre directly to avoid relying on relationship attributes
+							from database.database import Usuario
+							user = Usuario.query.with_entities(Usuario.nombre).filter_by(id=entrenador_usuario_id).first()
+							if user:
+								entrenador_nombre = getattr(user, 'nombre', None)
+						except Exception:
+							entrenador_nombre = None
 			except Exception:
 				entrenador_nombre = None
 
