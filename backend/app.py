@@ -392,6 +392,71 @@ def listar_rutinas(entrenador_usuario_id):
 	return jsonify(result), 200
 
 
+@app.route('/api/rutinas/public', methods=['GET'])
+def listar_rutinas_publicas():
+	"""Devuelve rutinas públicas (es_publica == True) ordenadas por creación.
+	Endpoint público: no requiere JWT. Se intenta ser resiliente ante fallos
+	de esquema similar a `listar_rutinas`.
+	"""
+	try:
+		try:
+			rutinas = Rutina.query.filter_by(es_publica=True).order_by(Rutina.creado_en.desc()).all()
+		except Exception as e:
+			# intento de reparación ligera
+			err_str = str(e)
+			app.logger.exception('listar_rutinas_publicas: query failed, attempting repair')
+			if 'UndefinedColumn' in err_str or ('column' in err_str and 'does not exist' in err_str) or 'no such column' in err_str:
+				try:
+					with app.app_context():
+						db.create_all()
+						expected_cols = {
+							'entrenador_id': 'INTEGER',
+							'nombre': 'VARCHAR(200)',
+							'descripcion': 'TEXT',
+							'nivel': 'VARCHAR(50)',
+							'es_publica': 'BOOLEAN',
+							'creado_en': 'TIMESTAMP'
+						}
+						for c, ttype in expected_cols.items():
+							try:
+								db.session.execute(text(f"ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS {c} {ttype}"))
+							except Exception:
+								pass
+						try:
+							db.session.commit()
+						except Exception:
+							db.session.rollback()
+				except Exception:
+					db.session.rollback()
+			# reintentar una vez
+			try:
+				rutinas = Rutina.query.filter_by(es_publica=True).order_by(Rutina.creado_en.desc()).all()
+			except Exception as e2:
+				app.logger.exception('listar_rutinas_publicas: still failing after repair')
+				return jsonify({'error': 'db error', 'detail': str(e2)}), 500
+
+		result = []
+		for r in rutinas:
+			creado_val = None
+			try:
+				creado_val = r.creado_en.isoformat() if getattr(r, 'creado_en', None) else None
+			except Exception:
+				creado_val = None
+			# intentar obtener nombre del entrenador si existe
+			entrenador_nombre = None
+			try:
+				ent = Entrenador.query.filter_by(id=r.entrenador_id).first()
+				if ent and getattr(ent, 'usuario', None):
+					entrenador_nombre = ent.usuario.nombre
+			except Exception:
+				entrenador_nombre = None
+			result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre})
+		return jsonify(result), 200
+	except Exception as e:
+		app.logger.exception('listar_rutinas_publicas: unexpected failure')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
 @jwt_required
 def actualizar_rutina(rutina_id):

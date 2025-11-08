@@ -42,7 +42,32 @@
 
       <section v-if="activePanel === 'explorar'" class="mt-6">
         <h2 class="text-lg font-semibold mb-2">Explorar Rutinas</h2>
-        <div class="bg-white p-4 rounded shadow">(Placeholder para explorar rutinas)</div>
+        <div v-if="loadingExplorar" class="bg-white p-4 rounded shadow">Cargando rutinas...</div>
+        <div v-else>
+          <div v-if="explorarRutinas.length === 0" class="bg-white p-4 rounded shadow">No hay rutinas públicas disponibles.</div>
+          <div v-else class="bg-white p-4 rounded shadow">
+            <table class="min-w-full">
+              <thead>
+                <tr class="text-left">
+                  <th class="px-4 py-2">Nombre</th>
+                  <th class="px-4 py-2">Nivel</th>
+                  <th class="px-4 py-2">Entrenador</th>
+                  <th class="px-4 py-2">Descripción</th>
+                  <th class="px-4 py-2">Creado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in explorarRutinas" :key="r.id" class="border-t">
+                  <td class="px-4 py-2">{{ r.nombre }}</td>
+                  <td class="px-4 py-2">{{ r.nivel }}</td>
+                  <td class="px-4 py-2">{{ r.entrenador_nombre || '—' }}</td>
+                  <td class="px-4 py-2">{{ r.descripcion }}</td>
+                  <td class="px-4 py-2">{{ r.creado_en ? new Date(r.creado_en).toLocaleString() : '' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section v-if="activePanel === 'planes'" class="mt-6">
@@ -100,6 +125,9 @@ export default {
       mediciones: [],
       loadingList: false
       ,
+      explorarRutinas: [],
+      loadingExplorar: false
+      ,
       activePanel: 'mediciones'
     }
   },
@@ -139,6 +167,21 @@ export default {
       }
     },
 
+    async fetchRutinasPublicas() {
+      this.loadingExplorar = true
+      this.explorarRutinas = []
+      try {
+        const res = await api.get('/api/rutinas/public', { skipAuth: true })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error al obtener rutinas')
+        this.explorarRutinas = data
+      } catch (err) {
+        console.error('fetchRutinasPublicas', err)
+      } finally {
+        this.loadingExplorar = false
+      }
+    },
+
     // Navegar entre paneles y sincronizar con la ruta
     select(panel) {
       if (!panel) return
@@ -150,6 +193,7 @@ export default {
         // ignore navigation errors
       }
       if (panel === 'mediciones') this.fetchMediciones()
+      if (panel === 'explorar') this.fetchRutinasPublicas()
     },
 
     logout() {
@@ -162,6 +206,7 @@ export default {
     const panel = parts[2] || 'mediciones'
     if (panel) this.activePanel = panel
     if (this.activePanel === 'mediciones') this.fetchMediciones()
+    if (this.activePanel === 'explorar') this.fetchRutinasPublicas()
     this.$watch(() => this.$route.path, (newPath) => {
       const p = (newPath || '').split('/')[2] || 'mediciones'
       if (p) this.select(p)
