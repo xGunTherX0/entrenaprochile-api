@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/Login.vue'
 import EntrenadorDashboard from '../views/EntrenadorDashboard.vue'
 import ClienteDashboard from '../views/ClienteDashboard.vue'
+import ClienteRutina from '../views/ClienteRutina.vue'
 import Home from '../views/Home.vue'
 import Admin from '../views/Admin.vue'
 // Admin child panels
@@ -47,6 +48,12 @@ const routes = [
     path: '/cliente/explorar',
     name: 'ClienteExplorar',
     component: ClienteDashboard
+  },
+  {
+    path: '/cliente/rutina/:id',
+    name: 'ClienteRutina',
+    component: ClienteRutina,
+    props: true
   },
   {
     path: '/cliente/planes',

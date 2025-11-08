@@ -46,26 +46,37 @@
         <div v-else>
           <div v-if="explorarRutinas.length === 0" class="bg-white p-4 rounded shadow">No hay rutinas públicas disponibles.</div>
           <div v-else class="bg-white p-4 rounded shadow">
-            <table class="min-w-full">
-              <thead>
-                <tr class="text-left">
-                  <th class="px-4 py-2">Nombre</th>
-                  <th class="px-4 py-2">Nivel</th>
-                  <th class="px-4 py-2">Entrenador</th>
-                  <th class="px-4 py-2">Descripción</th>
-                  <th class="px-4 py-2">Creado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in explorarRutinas" :key="r.id" class="border-t">
-                  <td class="px-4 py-2">{{ r.nombre }}</td>
-                  <td class="px-4 py-2">{{ r.nivel }}</td>
-                  <td class="px-4 py-2">{{ r.entrenador_nombre || '—' }}</td>
-                  <td class="px-4 py-2">{{ r.descripcion }}</td>
-                  <td class="px-4 py-2">{{ r.creado_en ? new Date(r.creado_en).toLocaleString() : '' }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="flex">
+              <aside class="w-1/4 pr-4 trainer-list">
+                <h3 class="font-semibold mb-2">Entrenadores</h3>
+                <div class="space-y-2">
+                  <button :class="{'font-semibold text-blue-600': selectedTrainerId===null}" @click="selectTrainer(null)" class="px-2 py-1 rounded bg-gray-50 w-full text-left">Todos</button>
+                  <button v-for="t in trainers" :key="t.entrenador_id" @click="selectTrainer(t.entrenador_id)" :class="{'font-semibold text-blue-600': selectedTrainerId===t.entrenador_id}" class="px-2 py-1 rounded bg-gray-50 w-full text-left">{{ t.entrenador_nombre || '—' }}</button>
+                </div>
+              </aside>
+              <div class="flex-1">
+                <table class="min-w-full">
+                  <thead>
+                    <tr class="text-left">
+                      <th class="px-4 py-2">Nombre</th>
+                      <th class="px-4 py-2">Nivel</th>
+                      <th class="px-4 py-2">Entrenador</th>
+                      <th class="px-4 py-2">Descripción</th>
+                      <th class="px-4 py-2">Creado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="r in filteredRutinas" :key="r.id" class="border-t hover:bg-gray-50 cursor-pointer" @click="openRutinaDetail(r.id)">
+                      <td class="px-4 py-2">{{ r.nombre }}</td>
+                      <td class="px-4 py-2">{{ r.nivel }}</td>
+                      <td class="px-4 py-2">{{ r.entrenador_nombre || '—' }}</td>
+                      <td class="px-4 py-2">{{ r.descripcion }}</td>
+                      <td class="px-4 py-2">{{ r.creado_en ? new Date(r.creado_en).toLocaleString() : '' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -126,7 +137,8 @@ export default {
       loadingList: false
       ,
       explorarRutinas: [],
-      loadingExplorar: false
+      loadingExplorar: false,
+      selectedTrainerId: null
       ,
       activePanel: 'mediciones'
     }
@@ -182,6 +194,14 @@ export default {
       }
     },
 
+    selectTrainer(trainerId) {
+      this.selectedTrainerId = trainerId
+    },
+
+    openRutinaDetail(rutinaId) {
+      this.$router.push(`/cliente/rutina/${rutinaId}`)
+    },
+
     // Navegar entre paneles y sincronizar con la ruta
     select(panel) {
       if (!panel) return
@@ -201,6 +221,21 @@ export default {
       this.$router.push('/')
     }
   },
+  computed: {
+    trainers() {
+      // build list of unique trainers from explorarRutinas
+      const map = {}
+      this.explorarRutinas.forEach(r => {
+        const id = r.entrenador_id || ('_' + (r.entrenador_nombre || ''))
+        if (!map[id]) map[id] = { entrenador_id: r.entrenador_id, entrenador_nombre: r.entrenador_nombre }
+      })
+      return Object.values(map)
+    },
+    filteredRutinas() {
+      if (!this.selectedTrainerId) return this.explorarRutinas
+      return this.explorarRutinas.filter(r => r.entrenador_id === this.selectedTrainerId)
+    }
+  },
   mounted() {
     const parts = (this.$route && this.$route.path) ? this.$route.path.split('/') : []
     const panel = parts[2] || 'mediciones'
@@ -214,3 +249,10 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.trainer-list button {
+  text-align: left;
+  width: 100%;
+}
+</style>

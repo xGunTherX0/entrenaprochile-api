@@ -450,7 +450,7 @@ def listar_rutinas_publicas():
 					entrenador_nombre = ent.usuario.nombre
 			except Exception:
 				entrenador_nombre = None
-			result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre})
+			result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': r.entrenador_id, 'entrenador_usuario_id': getattr(ent, 'usuario_id', None) if ent else None})
 		return jsonify(result), 200
 	except Exception as e:
 		app.logger.exception('listar_rutinas_publicas: unexpected failure')
@@ -494,6 +494,11 @@ def actualizar_rutina(rutina_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+	except Exception as e:
+		db.session.rollback()
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/<int:rutina_id>', methods=['DELETE'])
 @jwt_required
 def eliminar_rutina(rutina_id):
@@ -514,6 +519,7 @@ def eliminar_rutina(rutina_id):
 	except Exception as e:
 		db.session.rollback()
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
 
 
 # ------------------ Admin endpoints (protected por role==admin) ------------------
