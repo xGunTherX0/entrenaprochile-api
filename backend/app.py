@@ -492,6 +492,87 @@ def listar_rutinas_publicas():
 			return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+# Ruta pública alternativa y explícita para detalle de rutina, evita conflicto con
+# rutas que aceptan `entrenador_usuario_id` en la misma posición de URL.
+@app.route('/api/rutinas/public/<int:rutina_id>', methods=['GET'])
+def obtener_rutina_publica_explicit(rutina_id):
+	try:
+		rutina = Rutina.query.filter_by(id=rutina_id).first()
+		if not rutina:
+			return jsonify({'error': 'rutina not found'}), 404
+		if not getattr(rutina, 'es_publica', False):
+			return jsonify({'error': 'forbidden: rutina not public'}), 403
+
+		creado_val = None
+		try:
+			creado_val = rutina.creado_en.isoformat() if getattr(rutina, 'creado_en', None) else None
+		except Exception:
+			creado_val = None
+
+		entrenador_nombre = None
+		entrenador_id = getattr(rutina, 'entrenador_id', None)
+		entrenador_usuario_id = None
+		try:
+			ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
+			if ent:
+				entrenador_usuario_id = getattr(ent, 'usuario_id', None)
+				entrenador_nombre = getattr(ent.usuario, 'nombre', None) if getattr(ent, 'usuario', None) else None
+		except Exception:
+			entrenador_nombre = None
+
+		return jsonify({'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': entrenador_id, 'entrenador_usuario_id': entrenador_usuario_id}), 200
+	except Exception as e:
+		app.logger.exception('obtener_rutina_publica_explicit failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/rutinas/<int:rutina_id>/seguir', methods=['POST'])
+@jwt_required
+def seguir_rutina(rutina_id):
+	"""Asocia la rutina al cliente autenticado (guardar/seguir rutina).
+	Crea una tabla ligera `cliente_rutina` si no existe y añade la relación
+	evitando duplicados. Requiere token JWT y que el usuario tenga una fila
+	`Cliente` asociada a su `usuario_id`.
+	"""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	try:
+		cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		cliente = None
+	if not cliente:
+		return jsonify({'error': 'cliente not found'}), 404
+
+	try:
+		rutina = Rutina.query.filter_by(id=rutina_id).first()
+	except Exception:
+		rutina = None
+	if not rutina:
+		return jsonify({'error': 'rutina not found'}), 404
+
+	try:
+		# Ensure lightweight join table exists. Use DB-native CREATE TABLE IF NOT EXISTS
+		# to avoid needing full migrations in many environments.
+		with app.app_context():
+			try:
+				db.session.execute(text('CREATE TABLE IF NOT EXISTS cliente_rutina (cliente_id INTEGER NOT NULL, rutina_id INTEGER NOT NULL, PRIMARY KEY (cliente_id, rutina_id))'))
+			except Exception:
+				# table creation might fail on restricted DBs; continue and attempt insert
+				pass
+
+			# Insert only if not exists (works in Postgres and SQLite via SELECT-WHERE NOT EXISTS pattern)
+			insert_sql = text('INSERT INTO cliente_rutina (cliente_id, rutina_id) SELECT :cid, :rid WHERE NOT EXISTS (SELECT 1 FROM cliente_rutina WHERE cliente_id = :cid AND rutina_id = :rid)')
+			db.session.execute(insert_sql, {'cid': cliente.id, 'rid': rutina.id})
+			db.session.commit()
+		return jsonify({'message': 'rutina guardada'}), 200
+	except Exception as e:
+		db.session.rollback()
+		app.logger.exception('seguir_rutina failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
 @jwt_required
 def actualizar_rutina(rutina_id):
