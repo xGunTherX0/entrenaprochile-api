@@ -551,8 +551,17 @@ def seguir_rutina(rutina_id):
 		cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
 	except Exception:
 		cliente = None
+	# If the authenticated user doesn't yet have a Cliente row, create it automatically.
+	# This makes the UX smoother for users who registered but whose Cliente row wasn't provisioned.
 	if not cliente:
-		return jsonify({'error': 'cliente not found'}), 404
+		try:
+			cliente = Cliente(usuario_id=token_user_id)
+			db.session.add(cliente)
+			db.session.commit()
+		except Exception as e:
+			db.session.rollback()
+			app.logger.exception('seguir_rutina: failed creating Cliente row')
+			return jsonify({'error': 'cliente not found and could not be created', 'detail': str(e)}), 500
 
 	try:
 		rutina = Rutina.query.filter_by(id=rutina_id).first()
