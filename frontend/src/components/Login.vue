@@ -67,6 +67,50 @@ export default {
         const auth = (await import('../utils/auth.js')).default
         auth.setSession({ user_id: data.user_id, role, nombre, token })
 
+        // Sincronizar rutinas guardadas localmente con el servidor
+        try {
+          const api = (await import('../utils/api.js')).default
+          const toast = (await import('../utils/toast.js')).default
+          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
+          if (Array.isArray(saved) && saved.length > 0) {
+            // Intentar sincronizar en paralelo, pero no bloquear demasiado la UI
+            const promises = saved.map(id => api.post(`/api/rutinas/${id}/seguir`, {}))
+            const results = await Promise.allSettled(promises)
+            // Contar éxitos
+            let success = 0
+            const failedIds = []
+            for (let i = 0; i < results.length; i++) {
+              const r = results[i]
+              const id = saved[i]
+              if (r.status === 'fulfilled') {
+                try {
+                  // check response ok
+                  const res = r.value
+                  if (res && res.ok) {
+                    success++
+                  } else {
+                    failedIds.push(id)
+                  }
+                } catch (e) {
+                  failedIds.push(id)
+                }
+              } else {
+                failedIds.push(id)
+              }
+            }
+            if (success > 0) {
+              toast.show(`${success} rutinas sincronizadas con el servidor`, 2500)
+            }
+            // Guardar el resto (fallidos) en localStorage para reintentos futuros
+            try {
+              localStorage.setItem('saved_rutinas', JSON.stringify(failedIds))
+            } catch (e) {}
+          }
+        } catch (e) {
+          // Si falla el proceso de sincronización, no bloqueamos el login
+          try { (await import('../utils/toast.js')).default.show('No se pudo sincronizar rutinas ahora, se intentará luego', 2500) } catch (_) {}
+        }
+
         // Redirige según rol
         if (role === 'entrenador') {
           this.$router.push('/entrenador')

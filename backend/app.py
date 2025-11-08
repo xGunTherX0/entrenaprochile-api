@@ -591,6 +591,57 @@ def seguir_rutina(rutina_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+@app.route('/api/rutinas/mis', methods=['GET'])
+@jwt_required
+def listar_mis_rutinas():
+	"""Devuelve las rutinas guardadas por el cliente autenticado.
+	Requiere JWT. Intenta ser resiliente ante ausencia de la tabla cliente_rutina.
+	"""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	try:
+		cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		cliente = None
+
+	if not cliente:
+		# create cliente row for the user if missing to keep behavior consistent
+		try:
+			cliente = Cliente(usuario_id=token_user_id)
+			db.session.add(cliente)
+			db.session.commit()
+		except Exception:
+			db.session.rollback()
+			return jsonify({'error': 'cliente not found'}), 404
+
+	try:
+		# Ensure join table exists (best-effort)
+		try:
+			db.session.execute(text('CREATE TABLE IF NOT EXISTS cliente_rutina (cliente_id INTEGER NOT NULL, rutina_id INTEGER NOT NULL, PRIMARY KEY (cliente_id, rutina_id))'))
+			db.session.commit()
+		except Exception:
+			db.session.rollback()
+
+		# Query rutinas joined with cliente_rutina
+		q = text('SELECT r.id, r.nombre, r.descripcion, r.nivel, r.es_publica, r.creado_en FROM rutinas r JOIN cliente_rutina cr ON cr.rutina_id = r.id WHERE cr.cliente_id = :cid ORDER BY r.creado_en DESC')
+		rows = db.session.execute(q, {'cid': cliente.id}).fetchall()
+		result = []
+		for r in rows:
+			creado_val = None
+			try:
+				# r.creado_en may be a datetime or string
+				creado_val = r['creado_en'].isoformat() if getattr(r['creado_en'], 'isoformat', None) else str(r['creado_en'])
+			except Exception:
+				creado_val = None
+			result.append({'id': r['id'], 'nombre': r['nombre'], 'descripcion': r['descripcion'], 'nivel': r['nivel'], 'es_publica': r['es_publica'], 'creado_en': creado_val})
+		return jsonify(result), 200
+	except Exception as e:
+		app.logger.exception('listar_mis_rutinas failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
 @jwt_required
 def actualizar_rutina(rutina_id):
