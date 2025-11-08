@@ -113,6 +113,7 @@
 
 <script>
 import auth from '../utils/auth.js'
+import api from '../utils/api.js'
 
 export default {
   name: 'EntrenadorDashboard',
@@ -144,9 +145,7 @@ export default {
       const session = auth.getSession()
       if (!session.user_id) return
       try {
-        const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
-        const headers = { ...auth.authHeaders() }
-        const res = await fetch(`${base}/api/rutinas/${session.user_id}`, { headers })
+        const res = await api.get(`/api/rutinas/${session.user_id}`)
         if (!res.ok) throw new Error('error fetching')
         this.rutinas = await res.json()
       } catch (e) {
@@ -164,17 +163,11 @@ export default {
         alert('No autenticado')
         return
       }
-      const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
       const payload = { ...this.form, entrenador_id: session.user_id }
       try {
-        const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
-        const res = await fetch(`${base}/api/rutinas`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        })
+        const res = await api.post('/api/rutinas', payload)
         if (!res.ok) {
-          const err = await res.json()
+          const err = await res.json().catch(() => ({}))
           alert('Error: ' + (err.error || JSON.stringify(err)))
           return
         }
@@ -194,7 +187,7 @@ export default {
       if (!confirm('¿Eliminar rutina?')) return
       const session = auth.getSession()
       try {
-  const res = await fetch(`${base}/api/rutinas/${id}`, { method: 'DELETE', headers: auth.authHeaders() })
+        const res = await api.del(`/api/rutinas/${id}`)
         if (!res.ok) {
           const err = await res.json()
           alert('Error: ' + (err.error || JSON.stringify(err)))
@@ -220,8 +213,7 @@ export default {
     async saveEdit(id) {
       const session = auth.getSession()
       try {
-  const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
-  const res = await fetch(`${base}/api/rutinas/${id}`, { method: 'PUT', headers, body: JSON.stringify(this.editForm) })
+        const res = await api.put(`/api/rutinas/${id}`, this.editForm)
         if (!res.ok) {
           const err = await res.json()
           alert('Error: ' + (err.error || JSON.stringify(err)))

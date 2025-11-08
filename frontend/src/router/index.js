@@ -19,7 +19,7 @@ const routes = [
     path: '/entrenador',
     redirect: '/entrenador/rutinas'
   },
-  {
+  { 
     path: '/entrenador/rutinas',
     name: 'EntrenadorRutinas',
     component: EntrenadorDashboard
@@ -79,15 +79,22 @@ const router = createRouter({
 // Rutas protegidas: cualquiera que no sea login ('/') requiere sesión
 const protectedPrefixes = ['/entrenador', '/cliente', '/admin', '/home']
 
+import auth from '../utils/auth.js'
+
 router.beforeEach((to, from, next) => {
+  // If route is protected, require a valid auth token + user info in localStorage
   if (protectedPrefixes.some(p => to.path.startsWith(p))) {
-    const role = localStorage.getItem('user_role')
+    const token = auth.getAuthToken()
+    const role = auth.getRole()
     const userId = localStorage.getItem('user_id')
-    if (!role || !userId) {
+    if (!token || !role || !userId) {
       // No logueado -> redirigir al login
       return next({ path: '/' })
     }
   }
+
+  // If user is at login page but already has a token, you may redirect them
+  // to their landing page (optional). We'll keep default behavior (show login)
   next()
 })
 

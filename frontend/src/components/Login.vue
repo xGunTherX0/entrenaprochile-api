@@ -49,15 +49,9 @@ export default {
       this.error = null
       this.loading = true
       try {
-  // Ajusta la baseURL según entorno. En producción Netlify sirve frontend y backend separado.
-  // Si VITE_API_BASE no está definida en el entorno de Netlify, usar la URL pública del backend en Render.
-  const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
-        const res = await fetch(`${base}/api/usuarios/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: this.email, password: this.password })
-        })
-
+        // Use centralized API helper
+        const api = (await import('../utils/api.js')).default
+        const res = await api.post('/api/usuarios/login', { email: this.email, password: this.password }, { skipAuth: true })
         const data = await res.json()
         if (!res.ok) {
           this.error = data.error || 'Login failed'
@@ -65,14 +59,13 @@ export default {
           return
         }
 
-  // data should include { message, user_id, role, nombre, token }
-  const role = data.role || 'usuario'
-  const nombre = data.nombre || ''
-  const token = data.token
+        const role = data.role || 'usuario'
+        const nombre = data.nombre || ''
+        const token = data.token
 
-  // Guarda en sesión usando helper (incluye token JWT)
-  const auth = (await import('../utils/auth.js')).default
-  auth.setSession({ user_id: data.user_id, role, nombre, token })
+        // Guarda en sesión usando helper (incluye token JWT)
+        const auth = (await import('../utils/auth.js')).default
+        auth.setSession({ user_id: data.user_id, role, nombre, token })
 
         // Redirige según rol
         if (role === 'entrenador') {

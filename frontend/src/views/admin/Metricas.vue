@@ -25,7 +25,7 @@
 
 <script>
 import auth from '../../utils/auth.js'
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
+import api from '../../utils/api.js'
 export default {
   name: 'AdminMetricas',
   data() {
@@ -36,7 +36,7 @@ export default {
       this.metricsError = null
       this.loadingMetrics = true
       try {
-        const res = await fetch(`${API_BASE}/api/admin/metrics`, { headers: auth.authHeaders() })
+  const res = await api.get('/api/admin/metrics')
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
           console.error('Metrics error', res.status, body)

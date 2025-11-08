@@ -62,8 +62,7 @@
 
 <script>
 import auth from '../utils/auth.js'
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
+import api from '../utils/api.js'
 
 export default {
   name: 'Admin',
@@ -106,7 +105,7 @@ export default {
     async loadUsers() {
       this.error = null
       try {
-        const res = await fetch(`${API_BASE}/api/admin/usuarios`, { headers: auth.authHeaders() })
+        const res = await api.get('/api/admin/usuarios')
         if (!res.ok) {
           const text = await res.json().catch(() => ({}))
           this.error = text.error || 'Error cargando usuarios'
@@ -121,7 +120,7 @@ export default {
       this.metricsError = null
       this.loadingMetrics = true
       try {
-        const res = await fetch(`${API_BASE}/api/admin/metrics`, { headers: auth.authHeaders() })
+        const res = await api.get('/api/admin/metrics')
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
           console.error('Metrics error', res.status, body)
@@ -141,7 +140,7 @@ export default {
     async promote(id) {
       this.error = null
       try {
-        const res = await fetch(`${API_BASE}/api/admin/usuarios/${id}/promote`, { method: 'POST', headers: { ...auth.authHeaders(), 'Content-Type': 'application/json' } })
+        const res = await api.post(`/api/admin/usuarios/${id}/promote`, null)
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
           this.error = j.error || 'Error promoviendo usuario'
@@ -165,7 +164,7 @@ export default {
       this.error = null
       if (!confirm('¿Eliminar usuario? Esta acción es irreversible.')) return
       try {
-        const res = await fetch(`${API_BASE}/api/admin/usuarios/${id}`, { method: 'DELETE', headers: auth.authHeaders() })
+        const res = await api.del(`/api/admin/usuarios/${id}`)
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
           this.error = j.error || 'Error borrando usuario'
@@ -193,7 +192,7 @@ export default {
       try {
         // Register endpoint (public) creates Usuario + Cliente by default
         const payload = { email: this.newUser.email, nombre: this.newUser.nombre || this.newUser.email, password: this.newUser.password }
-        const res = await fetch(`${API_BASE}/api/usuarios/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const res = await api.post('/api/usuarios/register', payload, { skipAuth: true })
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
           this.createError = j.error || j.message || `Error creando usuario (${res.status})`
@@ -204,13 +203,13 @@ export default {
 
         // If admin wants specific role, call admin endpoints to provision
         if (this.newUser.role === 'cliente') {
-          const r2 = await fetch(`${API_BASE}/api/admin/usuarios/${newId}/create_cliente`, { method: 'POST', headers: auth.authHeaders() })
+          const r2 = await api.post(`/api/admin/usuarios/${newId}/create_cliente`, null)
           if (!r2.ok) {
             const j2 = await r2.json().catch(() => ({}))
             this.createError = `Usuario creado pero fallo al crear cliente: ${j2.error || j2.detail || r2.status}`
           }
         } else if (this.newUser.role === 'entrenador') {
-          const r3 = await fetch(`${API_BASE}/api/admin/usuarios/${newId}/promote`, { method: 'POST', headers: auth.authHeaders() })
+          const r3 = await api.post(`/api/admin/usuarios/${newId}/promote`, null)
           if (!r3.ok) {
             const j3 = await r3.json().catch(() => ({}))
             this.createError = `Usuario creado pero fallo al crear entrenador: ${j3.error || j3.detail || r3.status}`

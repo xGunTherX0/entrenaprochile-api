@@ -85,6 +85,7 @@
 <script>
 import WeightChart from '../components/WeightChart.vue'
 import auth from '../utils/auth.js'
+import api from '../utils/api.js'
 
 export default {
   name: 'ClienteDashboard',
@@ -107,15 +108,8 @@ export default {
       this.saving = true
       this.msg = ''
       try {
-  // Usar VITE_API_BASE en build; fallback a la URL pública del backend si no está definida
-  const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
         const user_id = auth.getSession().user_id
-        const headers = { 'Content-Type': 'application/json', ...auth.authHeaders() }
-        const res = await fetch(`${base}/api/mediciones`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ peso: this.peso, altura: this.altura, cintura: this.cintura })
-        })
+        const res = await api.post('/api/mediciones', { peso: this.peso, altura: this.altura, cintura: this.cintura })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Error al guardar')
         this.msg = 'Medición guardada con id ' + data.id
@@ -133,14 +127,11 @@ export default {
       this.loadingList = true
       this.mediciones = []
       try {
-  // Usar VITE_API_BASE en build; fallback a la URL pública del backend si no está definida
-  const base = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
-        const user_id = auth.getSession().user_id
-  const headers = { ...auth.authHeaders() }
-  const res = await fetch(`${base}/api/mediciones/${user_id}`, { headers })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
-        this.mediciones = data
+    const user_id = auth.getSession().user_id
+    const res = await api.get(`/api/mediciones/${user_id}`)
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
+    this.mediciones = data
       } catch (err) {
         console.error(err)
       } finally {
