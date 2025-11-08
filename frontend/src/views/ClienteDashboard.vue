@@ -73,7 +73,7 @@
                 <p class="mt-3 text-sm text-gray-700">{{ r.descripcion }}</p>
                 <div class="mt-4 flex items-center justify-between">
                   <button @click="openRutinaDetail(r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
-                  <button :disabled="savingFollowIds.includes(r.id)" @click="followRutina(r.id)" class="px-3 py-1 bg-green-600 text-white rounded">{{ savingFollowIds.includes(r.id) ? 'Guardando...' : 'Guardar rutina' }}</button>
+                  <button :disabled="savingFollowIds.includes(r.id) || localSavedRutinas.includes(r.id)" @click="followRutina(r.id)" class="px-3 py-1 bg-green-600 text-white rounded">{{ savingFollowIds.includes(r.id) ? 'Guardando...' : (localSavedRutinas.includes(r.id) ? 'Guardado' : 'Guardar rutina') }}</button>
                 </div>
               </div>
             </div>
@@ -152,7 +152,9 @@ export default {
       searchQuery: '',
       page: 1,
       pageSize: 6,
-      savingFollowIds: []
+      savingFollowIds: [],
+      // local fallback for saved rutinas (for unauthenticated or server errors)
+      localSavedRutinas: []
     }
   },
   methods: {
@@ -199,6 +201,13 @@ export default {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Error al obtener rutinas')
         this.explorarRutinas = data
+        // load local saved ids
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
+          this.localSavedRutinas = Array.isArray(saved) ? saved : []
+        } catch (e) {
+          this.localSavedRutinas = []
+        }
       } catch (err) {
         console.error('fetchRutinasPublicas', err)
       } finally {
@@ -223,11 +232,24 @@ export default {
         const res = await api.post(`/api/rutinas/${rutinaId}/seguir`, {})
         const body = await res.json()
         if (!res.ok) throw new Error(body.error || 'Error guardando rutina')
-        // success: you may show a toast or update UI
-        // remove saving flag
+        // success: update local marker
+        if (!this.localSavedRutinas.includes(rutinaId)) {
+          this.localSavedRutinas.push(rutinaId)
+          localStorage.setItem('saved_rutinas', JSON.stringify(this.localSavedRutinas))
+        }
+        // option: show small message
+        // toast.show('Rutina guardada', 2000)
       } catch (err) {
-        console.error('followRutina', err)
-        // errors will be handled by global api wrapper (401->redirect) or logged here
+        console.error('followRutina, falling back to local save', err)
+        // Fallback: save locally so user can see it in "Mis rutinas" even if server failed
+        try {
+          if (!this.localSavedRutinas.includes(rutinaId)) {
+            this.localSavedRutinas.push(rutinaId)
+            localStorage.setItem('saved_rutinas', JSON.stringify(this.localSavedRutinas))
+          }
+        } catch (e) {
+          console.error('local save failed', e)
+        }
       } finally {
         const idx = this.savingFollowIds.indexOf(rutinaId)
         if (idx !== -1) this.savingFollowIds.splice(idx, 1)

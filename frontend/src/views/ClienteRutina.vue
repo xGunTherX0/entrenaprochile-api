@@ -10,7 +10,7 @@
 
       <div class="flex items-center space-x-2 mb-4">
         <button @click="openSolicitar" class="px-3 py-2 bg-blue-600 text-white rounded">Solicitar plan</button>
-        <button v-if="canFollow" :disabled="saving" @click="follow" class="px-3 py-2 bg-green-600 text-white rounded">{{ saving ? 'Guardando...' : 'Guardar rutina' }}</button>
+        <button :disabled="saving || localSaved" @click="follow" class="px-3 py-2 bg-green-600 text-white rounded">{{ saving ? 'Guardando...' : (localSaved ? 'Guardado' : 'Guardar rutina') }}</button>
       </div>
 
       <div class="border-t pt-4">
@@ -32,13 +32,8 @@ export default {
       rutina: null,
       loading: true,
       error: null,
-      saving: false
-    }
-  },
-  computed: {
-    canFollow() {
-      const s = auth.getSession()
-      return s && s.token && s.role === 'cliente'
+      saving: false,
+      localSaved: false
     }
   },
   methods: {
@@ -54,10 +49,30 @@ export default {
         const body = await res.json()
         if (!res.ok) throw new Error(body.error || 'Error guardando rutina')
         // success: maybe show a small message
-        alert('Rutina guardada')
+        alert('Rutina guardada (servidor)')
+        // mark locally as saved as well
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
+          if (!saved.includes(this.rutina.id)) {
+            saved.push(this.rutina.id)
+            localStorage.setItem('saved_rutinas', JSON.stringify(saved))
+          }
+          this.localSaved = true
+        } catch (e) {}
       } catch (err) {
         console.error('follow rutina', err)
-        // api wrapper handles 401/403 globally
+        // fallback: save locally
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
+          if (!saved.includes(this.rutina.id)) {
+            saved.push(this.rutina.id)
+            localStorage.setItem('saved_rutinas', JSON.stringify(saved))
+          }
+          this.localSaved = true
+          alert('Rutina guardada localmente (inicia sesión para sincronizar)')
+        } catch (e) {
+          console.error('local fallback failed', e)
+        }
       } finally {
         this.saving = false
       }
@@ -74,6 +89,13 @@ export default {
       this.error = err.message
     } finally {
       this.loading = false
+      // set localSaved state
+      try {
+        const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
+        this.localSaved = Array.isArray(saved) && saved.includes(Number(id))
+      } catch (e) {
+        this.localSaved = false
+      }
     }
   }
 }
