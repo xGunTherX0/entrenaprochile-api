@@ -99,3 +99,16 @@ class Medicion(db.Model):
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     cliente = db.relationship('Cliente', back_populates='mediciones')
+
+
+class SolicitudPlan(db.Model):
+    __tablename__ = 'solicitudes_plan'
+    id = db.Column(db.Integer, primary_key=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
+    rutina_id = db.Column(db.Integer, db.ForeignKey('rutinas.id'), nullable=False)
+    estado = db.Column(db.String(50), default='pendiente')
+    nota = db.Column(db.Text)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cliente = db.relationship('Cliente', backref='solicitudes')
+    rutina = db.relationship('Rutina', backref='solicitudes')

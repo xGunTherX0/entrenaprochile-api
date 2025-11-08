@@ -90,7 +90,43 @@
 
       <section v-if="activePanel === 'planes'" class="mt-6">
         <h2 class="text-lg font-semibold mb-2">Mis Planes Nutricionales</h2>
-        <div class="bg-white p-4 rounded shadow">(Placeholder para planes)</div>
+        <div class="bg-white p-4 rounded shadow">
+          <div v-if="loadingMis">Cargando tus rutinas guardadas y solicitudes...</div>
+          <div v-else>
+            <h3 class="font-semibold mb-2">Rutinas guardadas</h3>
+            <div v-if="misRutinas.length===0" class="text-sm text-gray-600 mb-4">No tienes rutinas guardadas.</div>
+            <ul class="space-y-2 mb-4">
+              <li v-for="r in misRutinas" :key="r.id" class="p-3 border rounded bg-gray-50">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-semibold">{{ r.nombre }}</div>
+                    <div class="text-sm text-gray-600">{{ r.nivel }} • {{ r.descripcion }}</div>
+                  </div>
+                  <div>
+                    <button @click="openRutinaDetail(r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+
+            <h3 class="font-semibold mb-2">Solicitudes de plan</h3>
+            <div v-if="misSolicitudes.length===0" class="text-sm text-gray-600">No has solicitado ningún plan aún.</div>
+            <ul class="mt-2 space-y-2">
+              <li v-for="s in misSolicitudes" :key="s.id" class="p-3 border rounded bg-white">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <div class="font-semibold">{{ s.rutina_nombre || ('Rutina ' + s.rutina_id) }}</div>
+                    <div class="text-sm text-gray-600">Estado: {{ s.estado }} — {{ s.creado_en ? new Date(s.creado_en).toLocaleString() : '' }}</div>
+                    <div v-if="s.nota" class="text-sm mt-1">Nota: {{ s.nota }}</div>
+                  </div>
+                  <div>
+                    <button @click="openRutinaDetail(s.rutina_id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver rutina</button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section v-if="activePanel === 'mediciones'" class="mt-8">
@@ -155,6 +191,11 @@ export default {
       savingFollowIds: [],
       // local fallback for saved rutinas (for unauthenticated or server errors)
       localSavedRutinas: []
+      ,
+      // mis rutinas / solicitudes
+      misRutinas: [],
+      misSolicitudes: [],
+      loadingMis: false
     }
   },
   methods: {
@@ -272,11 +313,41 @@ export default {
       }
       if (panel === 'mediciones') this.fetchMediciones()
       if (panel === 'explorar') this.fetchRutinasPublicas()
+      if (panel === 'planes') this.fetchMisRutinas()
     },
 
     logout() {
       auth.clearSession()
       this.$router.push('/')
+    }
+    ,
+    async fetchMisRutinas() {
+      this.loadingMis = true
+      this.misRutinas = []
+      this.misSolicitudes = []
+      try {
+        // saved rutinas (requires auth)
+        try {
+          const res = await api.get('/api/rutinas/mis')
+          if (res && res.ok) {
+            this.misRutinas = await res.json()
+          }
+        } catch (e) {
+          console.error('fetch mis rutinas failed', e)
+        }
+
+        // solicitudes
+        try {
+          const r2 = await api.get('/api/solicitudes/mis')
+          if (r2 && r2.ok) {
+            this.misSolicitudes = await r2.json()
+          }
+        } catch (e) {
+          console.error('fetch mis solicitudes failed', e)
+        }
+      } finally {
+        this.loadingMis = false
+      }
     }
   },
   computed: {
@@ -321,6 +392,8 @@ export default {
       if (p) this.select(p)
     })
   }
+
+    
 }
 </script>
 
