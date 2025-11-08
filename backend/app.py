@@ -303,6 +303,18 @@ def crear_rutina():
 			with app.app_context():
 				# try to ensure tables/columns exist (safe in dev and harmless in prod)
 				db.create_all()
+				# attempt to ensure cliente_id column exists and is nullable (common schema mismatch)
+				try:
+					db.session.execute(text('ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS cliente_id INTEGER'))
+					# try to drop NOT NULL constraint if present (Postgres)
+					try:
+						db.session.execute(text('ALTER TABLE rutinas ALTER COLUMN cliente_id DROP NOT NULL'))
+					except Exception:
+						# ignore if DB doesn't support or constraint not present
+						pass
+				except Exception:
+					# ignore if ALTER or other ops fail; we'll still try the insert
+					pass
 				# attempt to insert again
 				rutina2 = Rutina(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, nivel=nivel, es_publica=bool(es_publica))
 				db.session.add(rutina2)
@@ -736,6 +748,7 @@ def admin_fix_schema_v2():
 			# Add entrenador_id and other expected columns for rutinas if missing
 			expected = {
 				'entrenador_id': "INTEGER",
+				'cliente_id': "INTEGER",
 				'nombre': "VARCHAR(200)",
 				'descripcion': "TEXT",
 				'nivel': "VARCHAR(50)",
@@ -759,11 +772,22 @@ def admin_fix_schema_v2():
 					db.session.rollback()
 					errors.append({'column': col, 'error': str(e)})
 
-			# Try to add FK for entrenador_id
+				# Try to add FK for entrenador_id
 			try:
 				db.session.execute(text('ALTER TABLE rutinas ADD CONSTRAINT IF NOT EXISTS fk_rutinas_entrenador FOREIGN KEY (entrenador_id) REFERENCES entrenadores(id)'))
 			except Exception:
 				# not fatal
+				pass
+
+			# If cliente_id exists but is NOT NULL, try to make it nullable (Postgres)
+			try:
+				if 'cliente_id' in existing_cols:
+					try:
+						db.session.execute(text('ALTER TABLE rutinas ALTER COLUMN cliente_id DROP NOT NULL'))
+					except Exception:
+						# ignore if the DB doesn't support this or constraint not present
+						pass
+			except Exception:
 				pass
 
 			# commit results
@@ -846,6 +870,16 @@ def admin_repair_rutinas():
 				'es_publica': "BOOLEAN",
 				'creado_en': "TIMESTAMP"
 			}
+
+			# also ensure cliente_id is present and nullable
+			try:
+				db.session.execute(text('ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS cliente_id INTEGER'))
+				try:
+					db.session.execute(text('ALTER TABLE rutinas ALTER COLUMN cliente_id DROP NOT NULL'))
+				except Exception:
+					pass
+			except Exception:
+				pass
 			added = []
 			errors = []
 			for col, coltype in expected.items():
