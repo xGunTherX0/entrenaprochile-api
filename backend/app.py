@@ -457,6 +457,41 @@ def listar_rutinas_publicas():
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+	@app.route('/api/rutinas/<int:rutina_id>', methods=['GET'])
+	def obtener_rutina_publica(rutina_id):
+		"""Devuelve la rutina por id si es pública. Si no es pública, devuelve 403.
+		Endpoint público para que clientes puedan ver detalle sin autenticación.
+		"""
+		try:
+			rutina = Rutina.query.filter_by(id=rutina_id).first()
+			if not rutina:
+				return jsonify({'error': 'rutina not found'}), 404
+			if not getattr(rutina, 'es_publica', False):
+				return jsonify({'error': 'forbidden: rutina not public'}), 403
+
+			creado_val = None
+			try:
+				creado_val = rutina.creado_en.isoformat() if getattr(rutina, 'creado_en', None) else None
+			except Exception:
+				creado_val = None
+
+			entrenador_nombre = None
+			entrenador_id = getattr(rutina, 'entrenador_id', None)
+			entrenador_usuario_id = None
+			try:
+				ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
+				if ent:
+					entrenador_usuario_id = getattr(ent, 'usuario_id', None)
+					entrenador_nombre = getattr(ent.usuario, 'nombre', None) if getattr(ent, 'usuario', None) else None
+			except Exception:
+				entrenador_nombre = None
+
+			return jsonify({'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': entrenador_id, 'entrenador_usuario_id': entrenador_usuario_id}), 200
+		except Exception as e:
+			app.logger.exception('obtener_rutina_publica failed')
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
 @jwt_required
 def actualizar_rutina(rutina_id):
