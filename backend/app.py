@@ -766,17 +766,8 @@ def crear_plan():
 	es_publico = bool(data.get('es_publico', False))
 
 	if not nombre:
-		# Provide a minimal diagnostic to help frontend debugging without
-		# echoing sensitive data. Include the set of keys received (if any)
-		# and the raw body size so we can tell if the client sent an empty
-		# JSON payload or different keys. This is temporary for debugging.
-		try:
-			received = list(data.keys()) if isinstance(data, dict) else None
-		except Exception:
-			received = None
-		raw_len = len(request.get_data() or b'')
-		app.logger.info('crear_plan: missing nombre, received_keys=%s raw_len=%s content-type=%s', received, raw_len, request.headers.get('Content-Type'))
-		return jsonify({'error': 'nombre required', 'received_keys': received, 'raw_body_length': raw_len}), 400
+		# Required field missing
+		return jsonify({'error': 'nombre required'}), 400
 
 	# Log payload for debugging (temporary)
 	try:
