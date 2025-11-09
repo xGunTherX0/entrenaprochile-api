@@ -38,6 +38,14 @@ def decode_token(token):
 def jwt_required(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
+        # Skip authentication for CORS preflight requests (OPTIONS).
+        # Browsers send OPTIONS without Authorization header; if we
+        # enforce auth here the preflight will fail and block the real
+        # request from the frontend. Return 200 for OPTIONS so flask-cors
+        # can attach the proper CORS headers.
+        if request.method == 'OPTIONS':
+            return ('', 200)
+
         auth_header = request.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):
             return jsonify({'error': 'authorization required'}), 401
