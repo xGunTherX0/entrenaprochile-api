@@ -79,8 +79,15 @@ export default {
   },
   async mounted() {
     const id = this.$route.params.id
+    // Defensive: avoid calling the backend with invalid ids like null/undefined
+    if (!id || id === 'null' || isNaN(Number(id))) {
+      this.error = 'ID de rutina inválido'
+      this.loading = false
+      return
+    }
+
     try {
-  const res = await api.get(`/api/rutinas/public/${id}`, { skipAuth: true })
+      const res = await api.get(`/api/rutinas/public/${id}`, { skipAuth: true })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error || 'Error obteniendo rutina')
       this.rutina = body
