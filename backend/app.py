@@ -15,17 +15,14 @@ app = Flask(__name__)
 # receives a machine-readable error (detailed in development, generic in prod).
 @app.errorhandler(Exception)
 def handle_exception(e):
-	# NOTE: temporary verbose error handler for debugging production 500s.
-	# This will return the exception detail in the response body so we can
-	# capture the stacktrace and fix the underlying issue. Remove or tighten
-	# this after the bug is resolved.
+	# Global handler: don't leak internals in production, but show details in dev
+	is_prod = bool(os.getenv('DATABASE_URL'))
 	app.logger.exception('Unhandled exception')
-	try:
-		import traceback
-		tb = traceback.format_exc()
-	except Exception:
-		tb = str(e)
-	return jsonify({'error': 'internal server error', 'detail': str(e), 'traceback': tb}), 500
+	if is_prod:
+		return jsonify({'error': 'internal server error'}), 500
+	else:
+		# In development return the exception string for easier debugging.
+		return jsonify({'error': 'internal', 'detail': str(e)}), 500
 
 # Configurable CORS: limita orígenes en producción usando la variable de entorno
 # `CORS_ORIGINS`. Por defecto permite todos ('*') para facilitar pruebas.
@@ -739,10 +736,9 @@ def crear_plan():
 	# Verify entrenador (defensive: catch DB errors here separately so we can log them)
 	try:
 		entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
-	except Exception as e:
+	except Exception:
 		app.logger.exception('crear_plan: entrenador lookup failed')
-		# Return a 500 with detail for debugging; this is temporary and will be removed after fix.
-		return jsonify({'error': 'db error during entrenador lookup', 'detail': str(e)}), 500
+		return jsonify({'error': 'db error'}), 500
 	if not entrenador:
 		return jsonify({'error': 'forbidden: not entrenador'}), 403
 
@@ -772,11 +768,10 @@ def crear_plan():
 		db.session.rollback()
 		# Log exception with payload to help diagnose production failures
 		app.logger.exception('crear_plan failed during insert/commit: payload=%s', data)
-		# Return diagnostic detail temporarily so we can see the exact DB error in production response
+		# Return minimal diagnostic: include detail only in development
 		is_prod = bool(os.getenv('DATABASE_URL'))
 		if is_prod:
-			# In production still return a concise message but include the DB exception string for now
-			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+			return jsonify({'error': 'db error'}), 500
 		else:
 			return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
