@@ -535,6 +535,23 @@ def obtener_rutina_publica_explicit(rutina_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+# Defensive: catch non-integer IDs requested against the public rutina path
+# Some frontend clients accidentally request `/api/rutinas/public/null` when
+# no id is available — Flask's int route won't match and the request would
+# normally return 404. In production we observed this reaching the app and
+# resulting in a generic 500 response. Provide a clearer 400 response here.
+@app.route('/api/rutinas/public/<rutina_id>', methods=['GET'])
+def obtener_rutina_publica_public_id_guard(rutina_id):
+	# If the path segment is not an integer, respond with a helpful 400
+	try:
+		int(rutina_id)
+	except Exception:
+		app.logger.info('Invalid rutina_id path received for public endpoint: %s', rutina_id)
+		return jsonify({'error': 'invalid rutina id'}), 400
+	# If it's an integer string, delegate to the explicit int route handler
+	return obtener_rutina_publica_explicit(int(rutina_id))
+
+
 @app.route('/api/rutinas/<int:rutina_id>/seguir', methods=['POST'])
 @jwt_required
 def seguir_rutina(rutina_id):
