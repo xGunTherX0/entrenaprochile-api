@@ -100,7 +100,47 @@
 
       <section v-if="activePanel === 'planes'" class="mt-4">
         <h2 class="text-xl font-semibold">Mis Planes Alimenticios</h2>
-        <div class="bg-white p-4 rounded shadow-sm">(Placeholder para planes)</div>
+        <div class="bg-white p-4 rounded shadow-sm max-w-xl">
+          <form @submit.prevent="createPlan" class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium">Nombre</label>
+              <input v-model="planForm.nombre" class="mt-1 block w-full border rounded px-2 py-1" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Descripción</label>
+              <textarea v-model="planForm.descripcion" class="mt-1 block w-full border rounded px-2 py-1"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium">Contenido</label>
+              <textarea v-model="planForm.contenido" class="mt-1 block w-full border rounded px-2 py-1" placeholder="Ej: Desayuno, Almuerzo, Cena"></textarea>
+            </div>
+            <div class="flex items-center">
+              <input type="checkbox" v-model="planForm.es_publico" id="publico-plan" />
+              <label for="publico-plan" class="ml-2 text-sm">Es público</label>
+            </div>
+            <div>
+              <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded">Crear Plan</button>
+            </div>
+          </form>
+
+          <h3 class="text-lg font-semibold mt-6">Tus planes</h3>
+          <div v-if="misPlanes.length" class="mt-2 space-y-3">
+            <div v-for="p in misPlanes" :key="p.id" class="border rounded p-3 bg-gray-50">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="font-semibold">{{ p.nombre }}</div>
+                  <div class="text-sm text-gray-600">{{ formatDate(p.creado_en) }}</div>
+                </div>
+                <div class="text-right text-sm">
+                  <div>{{ p.es_publico ? 'Público' : 'Privado' }}</div>
+                </div>
+              </div>
+              <div class="mt-2 text-sm text-gray-700">{{ p.descripcion }}</div>
+              <div class="mt-2 text-xs text-gray-600">{{ p.contenido }}</div>
+            </div>
+          </div>
+          <div v-else class="mt-2 text-sm text-gray-600">No hay planes aún.</div>
+        </div>
       </section>
 
       <section v-if="activePanel === 'publicar'" class="mt-4">
@@ -150,6 +190,43 @@ export default {
         this.rutinas = await res.json()
       } catch (e) {
         console.error('fetchRutinas', e)
+      }
+    },
+
+    async fetchMisPlanes() {
+      try {
+        const res = await api.get('/api/planes/mis')
+        if (!res.ok) {
+          // could be 403 if not entrenador
+          return
+        }
+        const j = await res.json()
+        this.misPlanes = Array.isArray(j) ? j : []
+      } catch (e) {
+        console.error('fetchMisPlanes', e)
+      }
+    },
+
+    async createPlan() {
+      const session = auth.getSession()
+      if (!session || !session.user_id) {
+        alert('No autenticado')
+        return
+      }
+      try {
+        const payload = { ...this.planForm }
+        const res = await api.post('/api/planes', payload)
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          alert('Error: ' + (err.error || JSON.stringify(err)))
+          return
+        }
+        // reset form and refresh list
+        this.planForm = { nombre: '', descripcion: '', contenido: '', es_publico: false }
+        await this.fetchMisPlanes()
+      } catch (e) {
+        console.error('createPlan', e)
+        alert('Error creando plan')
       }
     },
 
@@ -230,6 +307,9 @@ export default {
   created() {
     this.editingId = null
     this.editForm = { nombre: '', nivel: 'Básico', es_publica: false }
+    // plan form state
+    this.planForm = { nombre: '', descripcion: '', contenido: '', es_publico: false }
+    this.misPlanes = []
   },
   mounted() {
     // initialize from route path (e.g. /entrenador/rutinas)
@@ -237,6 +317,7 @@ export default {
     const panel = parts[2] || 'rutinas'
     if (panel) this.activePanel = panel
     if (this.activePanel === 'rutinas') this.fetchRutinas()
+    if (this.activePanel === 'planes') this.fetchMisPlanes()
     this.$watch(() => this.$route.path, (newPath) => {
       const p = (newPath || '').split('/')[2] || 'rutinas'
       if (p) this.select(p)

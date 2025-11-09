@@ -56,6 +56,13 @@ const routes = [
     props: true
   },
   {
+    path: '/cliente/plan/:id',
+    name: 'ClientePlan',
+    // lazy load a simple component for plan detail (we'll create ClientePlan.vue)
+    component: () => import('../views/ClientePlan.vue'),
+    props: true
+  },
+  {
     path: '/cliente/planes',
     name: 'ClientePlanes',
     component: ClienteDashboard

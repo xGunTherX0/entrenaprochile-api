@@ -722,6 +722,173 @@ def listar_solicitudes_mis():
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+# --- Plan alimenticio endpoints ---
+@app.route('/api/planes', methods=['POST'])
+@jwt_required
+def crear_plan():
+	"""Entrenador crea un plan alimenticio.
+	Body: { nombre, descripcion, contenido, es_publico }
+	"""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	# Verify entrenador (defensive: catch DB errors here separately so we can log them)
+	try:
+		entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+	except Exception as e:
+		app.logger.exception('crear_plan: entrenador lookup failed')
+		# Return a 500 with detail for debugging; this is temporary and will be removed after fix.
+		return jsonify({'error': 'db error during entrenador lookup', 'detail': str(e)}), 500
+	if not entrenador:
+		return jsonify({'error': 'forbidden: not entrenador'}), 403
+
+	data = request.get_json() or {}
+	nombre = data.get('nombre')
+	descripcion = data.get('descripcion')
+	contenido = data.get('contenido')
+	es_publico = bool(data.get('es_publico', False))
+
+	if not nombre:
+		return jsonify({'error': 'nombre required'}), 400
+
+	# Log payload for debugging (temporary)
+	try:
+		app.logger.debug('crear_plan: payload=%s, entrenador_id=%s', data, getattr(entrenador, 'id', None))
+	except Exception:
+		# ignore logging errors
+		pass
+
+	try:
+		from database.database import PlanAlimenticio
+		plan = PlanAlimenticio(entrenador_id=entrenador.id, nombre=nombre, descripcion=descripcion, contenido=contenido, es_publico=es_publico)
+		db.session.add(plan)
+		db.session.commit()
+		return jsonify({'message': 'plan creado', 'id': plan.id}), 201
+	except Exception as e:
+		db.session.rollback()
+		# Log exception with payload to help diagnose production failures
+		app.logger.exception('crear_plan failed during insert/commit: payload=%s', data)
+		# Return diagnostic detail temporarily so we can see the exact DB error in production response
+		is_prod = bool(os.getenv('DATABASE_URL'))
+		if is_prod:
+			# In production still return a concise message but include the DB exception string for now
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+		else:
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/planes', methods=['GET'])
+def listar_planes_publicos():
+	try:
+		planes = []
+		try:
+			# import model lazily to avoid circular imports during app init
+			from database.database import PlanAlimenticio
+			planes = PlanAlimenticio.query.filter_by(es_publico=True).order_by(PlanAlimenticio.creado_en.desc()).all()
+		except Exception:
+			# attempt to create table if missing
+			try:
+				with app.app_context():
+					db.create_all()
+			except Exception:
+				pass
+			try:
+				planes = PlanAlimenticio.query.filter_by(es_publico=True).order_by(PlanAlimenticio.creado_en.desc()).all()
+			except Exception as e:
+				app.logger.exception('listar_planes_publicos failed')
+				return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+		result = []
+		for p in planes:
+			creado = None
+			try:
+				creado = p.creado_en.isoformat() if getattr(p, 'creado_en', None) else None
+			except Exception:
+				creado = None
+			entrenador_nombre = None
+			try:
+				ent = Entrenador.query.filter_by(id=p.entrenador_id).first()
+				if ent:
+					entrenador_nombre = getattr(getattr(ent, 'usuario', None), 'nombre', None)
+			except Exception:
+				entrenador_nombre = None
+			result.append({'id': p.id, 'nombre': p.nombre, 'descripcion': p.descripcion, 'contenido': p.contenido, 'es_publico': p.es_publico, 'creado_en': creado, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': p.entrenador_id})
+		return jsonify(result), 200
+	except Exception as e:
+		app.logger.exception('listar_planes_publicos unexpected')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+	@app.route('/api/planes/mis', methods=['GET'])
+	@jwt_required
+	def listar_planes_mis():
+		"""Devuelve los planes creados por el entrenador autenticado.
+		Requiere JWT y que el usuario tenga rol de entrenador (fila Entrenador).
+		"""
+		token_user_id = request.jwt_payload.get('user_id')
+		if not token_user_id:
+			return jsonify({'error': 'authentication required'}), 401
+
+		try:
+			entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+		except Exception:
+			entrenador = None
+
+		if not entrenador:
+			return jsonify({'error': 'forbidden: not entrenador'}), 403
+
+		try:
+			from database.database import PlanAlimenticio
+			planes = PlanAlimenticio.query.filter_by(entrenador_id=entrenador.id).order_by(PlanAlimenticio.creado_en.desc()).all()
+			result = []
+			for p in planes:
+				creado = None
+				try:
+					creado = p.creado_en.isoformat() if getattr(p, 'creado_en', None) else None
+				except Exception:
+					creado = None
+				result.append({'id': p.id, 'nombre': p.nombre, 'descripcion': p.descripcion, 'contenido': p.contenido, 'es_publico': p.es_publico, 'creado_en': creado, 'entrenador_id': p.entrenador_id})
+			return jsonify(result), 200
+		except Exception as e:
+			app.logger.exception('listar_planes_mis failed')
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/planes/<int:plan_id>/solicitar', methods=['POST'])
+@jwt_required
+def solicitar_plan_por_plan(plan_id):
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+	try:
+		cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		cliente = None
+	if not cliente:
+		try:
+			cliente = Cliente(usuario_id=token_user_id)
+			db.session.add(cliente)
+			db.session.commit()
+		except Exception:
+			db.session.rollback()
+			return jsonify({'error': 'cliente not found'}), 404
+
+	try:
+		plan = PlanAlimenticio.query.filter_by(id=plan_id).first()
+		if not plan:
+			return jsonify({'error': 'plan not found'}), 404
+		from database.database import SolicitudPlan
+		s = SolicitudPlan(cliente_id=cliente.id, plan_id=plan.id, estado='pendiente')
+		db.session.add(s)
+		db.session.commit()
+		return jsonify({'message': 'solicitud creada', 'id': s.id}), 201
+	except Exception as e:
+		db.session.rollback()
+		app.logger.exception('solicitar_plan_por_plan failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/<int:rutina_id>', methods=['PUT'])
 @jwt_required
 def actualizar_rutina(rutina_id):

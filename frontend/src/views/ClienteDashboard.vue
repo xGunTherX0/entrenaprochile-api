@@ -93,17 +93,18 @@
         <div class="bg-white p-4 rounded shadow">
           <div v-if="loadingMis">Cargando tus rutinas guardadas y solicitudes...</div>
           <div v-else>
-            <h3 class="font-semibold mb-2">Rutinas guardadas</h3>
-            <div v-if="misRutinas.length===0" class="text-sm text-gray-600 mb-4">No tienes rutinas guardadas.</div>
+            <h3 class="font-semibold mb-2">Planes Alimenticios disponibles</h3>
+            <div v-if="planesPublicos.length===0" class="text-sm text-gray-600 mb-4">No hay planes disponibles.</div>
             <ul class="space-y-2 mb-4">
-              <li v-for="r in misRutinas" :key="r.id" class="p-3 border rounded bg-gray-50">
+              <li v-for="p in planesPublicos" :key="p.id" class="p-3 border rounded bg-gray-50">
                 <div class="flex justify-between items-center">
                   <div>
-                    <div class="font-semibold">{{ r.nombre }}</div>
-                    <div class="text-sm text-gray-600">{{ r.nivel }} • {{ r.descripcion }}</div>
+                    <div class="font-semibold">{{ p.nombre }}</div>
+                    <div class="text-sm text-gray-600">{{ p.descripcion }}</div>
                   </div>
-                  <div>
-                    <button @click="openRutinaDetail(r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
+                  <div class="space-x-2">
+                    <button @click="openPlanDetail(p.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
+                    <button @click="solicitarPlan(p.id)" class="px-3 py-1 bg-green-600 text-white rounded">Solicitar plan</button>
                   </div>
                 </div>
               </li>
@@ -196,6 +197,8 @@ export default {
       misRutinas: [],
       misSolicitudes: [],
       loadingMis: false
+      ,
+      planesPublicos: []
     }
   },
   methods: {
@@ -219,14 +222,15 @@ export default {
     },
 
     async fetchMediciones() {
+      // keep fetching mediciones for the chart only
       this.loadingList = true
       this.mediciones = []
       try {
-    const user_id = auth.getSession().user_id
-    const res = await api.get(`/api/mediciones/${user_id}`)
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
-    this.mediciones = data
+        const user_id = auth.getSession().user_id
+        const res = await api.get(`/api/mediciones/${user_id}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error al obtener mediciones')
+        this.mediciones = data
       } catch (err) {
         console.error(err)
       } finally {
@@ -321,6 +325,33 @@ export default {
       this.$router.push('/')
     }
     ,
+    async solicitarPlan(planId) {
+      try {
+        const res = await api.post(`/api/planes/${planId}/solicitar`, {})
+        const body = await res.json()
+        if (!res.ok) throw new Error(body.error || 'Error solicitando plan')
+        // refresh solicitudes list
+        this.fetchMisRutinas()
+      } catch (err) {
+        console.error('solicitarPlan failed', err)
+        // fallback: store as local solicitud marker
+        try {
+          const local = JSON.parse(localStorage.getItem('local_solicitudes') || '[]')
+          if (!local.includes(planId)) {
+            local.push(planId)
+            localStorage.setItem('local_solicitudes', JSON.stringify(local))
+          }
+          alert('Solicitud guardada localmente; se sincronizará al iniciar sesión')
+        } catch (e) {
+          console.error('local solicitud failed', e)
+        }
+      }
+    },
+
+    openPlanDetail(planId) {
+      // For now reuse rutina detail route? We'll navigate to a simple route showing plan id
+      this.$router.push(`/cliente/plan/${planId}`)
+    },
     async fetchMisRutinas() {
       this.loadingMis = true
       this.misRutinas = []
@@ -344,6 +375,15 @@ export default {
           }
         } catch (e) {
           console.error('fetch mis solicitudes failed', e)
+        }
+        // planes publicos
+        try {
+          const rp = await api.get('/api/planes', { skipAuth: true })
+          if (rp && rp.ok) {
+            this.planesPublicos = await rp.json()
+          }
+        } catch (e) {
+          console.error('fetch planes publicos failed', e)
         }
       } finally {
         this.loadingMis = false

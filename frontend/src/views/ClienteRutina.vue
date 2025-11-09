@@ -9,7 +9,6 @@
       <p class="mb-4">{{ rutina.descripcion }}</p>
 
       <div class="flex items-center space-x-2 mb-4">
-        <button @click="openSolicitar" class="px-3 py-2 bg-blue-600 text-white rounded">Solicitar plan</button>
         <button :disabled="saving || localSaved" @click="follow" class="px-3 py-2 bg-green-600 text-white rounded">{{ saving ? 'Guardando...' : (localSaved ? 'Guardado' : 'Guardar rutina') }}</button>
       </div>
 

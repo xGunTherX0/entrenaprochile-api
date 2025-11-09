@@ -69,6 +69,22 @@ class Rutina(db.Model):
         return f'<Rutina {self.nombre}>'
 
 
+class PlanAlimenticio(db.Model):
+    __tablename__ = 'planes_alimenticios'
+    id = db.Column(db.Integer, primary_key=True)
+    entrenador_id = db.Column(db.Integer, db.ForeignKey('entrenadores.id'), nullable=False)
+    nombre = db.Column(db.String(200), nullable=False)
+    descripcion = db.Column(db.Text)
+    contenido = db.Column(db.Text)
+    es_publico = db.Column(db.Boolean, default=False)
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    entrenador = db.relationship('Entrenador', backref='planes')
+
+    def __repr__(self):
+        return f'<Plan {self.nombre}>'
+
+
 class Ejercicio(db.Model):
     __tablename__ = 'ejercicios'
     id = db.Column(db.Integer, primary_key=True)
@@ -105,10 +121,12 @@ class SolicitudPlan(db.Model):
     __tablename__ = 'solicitudes_plan'
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
-    rutina_id = db.Column(db.Integer, db.ForeignKey('rutinas.id'), nullable=False)
+    rutina_id = db.Column(db.Integer, db.ForeignKey('rutinas.id'), nullable=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('planes_alimenticios.id'), nullable=True)
     estado = db.Column(db.String(50), default='pendiente')
     nota = db.Column(db.Text)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     cliente = db.relationship('Cliente', backref='solicitudes')
     rutina = db.relationship('Rutina', backref='solicitudes')
+    plan = db.relationship('PlanAlimenticio', backref='solicitudes')
