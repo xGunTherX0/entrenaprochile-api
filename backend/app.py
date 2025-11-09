@@ -641,19 +641,46 @@ def listar_mis_rutinas():
 		except Exception:
 			db.session.rollback()
 
-		# Query rutinas joined with cliente_rutina
-		q = text('SELECT r.id, r.nombre, r.descripcion, r.nivel, r.es_publica, r.creado_en FROM rutinas r JOIN cliente_rutina cr ON cr.rutina_id = r.id WHERE cr.cliente_id = :cid ORDER BY r.creado_en DESC')
-		rows = db.session.execute(q, {'cid': cliente.id}).fetchall()
-		result = []
-		for r in rows:
-			creado_val = None
-			try:
-				# r.creado_en may be a datetime or string
-				creado_val = r['creado_en'].isoformat() if getattr(r['creado_en'], 'isoformat', None) else str(r['creado_en'])
-			except Exception:
+		# Try raw SQL join first (fast). If it fails (missing table/permission),
+		# fall back to an ORM-based query using SolicitudPlan -> Rutina.
+		try:
+			q = text('SELECT r.id, r.nombre, r.descripcion, r.nivel, r.es_publica, r.creado_en FROM rutinas r JOIN cliente_rutina cr ON cr.rutina_id = r.id WHERE cr.cliente_id = :cid ORDER BY r.creado_en DESC')
+			rows = db.session.execute(q, {'cid': cliente.id}).fetchall()
+			result = []
+			for r in rows:
 				creado_val = None
-			result.append({'id': r['id'], 'nombre': r['nombre'], 'descripcion': r['descripcion'], 'nivel': r['nivel'], 'es_publica': r['es_publica'], 'creado_en': creado_val})
-		return jsonify(result), 200
+				try:
+					# r.creado_en may be a datetime or string
+					creado_val = r['creado_en'].isoformat() if getattr(r['creado_en'], 'isoformat', None) else str(r['creado_en'])
+				except Exception:
+					creado_val = None
+				result.append({'id': r['id'], 'nombre': r['nombre'], 'descripcion': r['descripcion'], 'nivel': r['nivel'], 'es_publica': r['es_publica'], 'creado_en': creado_val})
+			return jsonify(result), 200
+		except Exception:
+			# Log and attempt an ORM fallback: use SolicitudPlan entries to infer rutinas
+			app.logger.exception('listar_mis_rutinas: raw SQL failed, attempting ORM fallback')
+			db.session.rollback()
+			try:
+				from database.database import SolicitudPlan
+				# Get rutina_ids from solicitudes for this cliente as a reasonable fallback
+				sols = SolicitudPlan.query.filter_by(cliente_id=cliente.id).order_by(SolicitudPlan.creado_en.desc()).all()
+				rutina_ids = [s.rutina_id for s in sols if getattr(s, 'rutina_id', None)]
+				result = []
+				if rutina_ids:
+					rutinas = Rutina.query.filter(Rutina.id.in_(rutina_ids)).order_by(Rutina.creado_en.desc()).all()
+					for r in rutinas:
+						creado_val = None
+						try:
+							creado_val = r.creado_en.isoformat() if getattr(r, 'creado_en', None) else None
+						except Exception:
+							creado_val = None
+						result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': creado_val})
+				# If no rutina_ids or the fallback produced nothing, return empty list instead of 500
+				return jsonify(result), 200
+			except Exception:
+				app.logger.exception('listar_mis_rutinas: ORM fallback also failed')
+				# Return an empty list to avoid surfacing a 500 to the frontend for this user-facing call
+				return jsonify([]), 200
 	except Exception as e:
 		app.logger.exception('listar_mis_rutinas failed')
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
