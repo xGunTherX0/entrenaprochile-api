@@ -15,14 +15,17 @@ app = Flask(__name__)
 # receives a machine-readable error (detailed in development, generic in prod).
 @app.errorhandler(Exception)
 def handle_exception(e):
-	# If running in production (DATABASE_URL set) avoid leaking internal details.
-	is_prod = bool(os.getenv('DATABASE_URL'))
+	# NOTE: temporary verbose error handler for debugging production 500s.
+	# This will return the exception detail in the response body so we can
+	# capture the stacktrace and fix the underlying issue. Remove or tighten
+	# this after the bug is resolved.
 	app.logger.exception('Unhandled exception')
-	if is_prod:
-		return jsonify({'error': 'internal server error'}), 500
-	else:
-		# In development return the exception string for easier debugging.
-		return jsonify({'error': 'internal', 'detail': str(e)}), 500
+	try:
+		import traceback
+		tb = traceback.format_exc()
+	except Exception:
+		tb = str(e)
+	return jsonify({'error': 'internal server error', 'detail': str(e), 'traceback': tb}), 500
 
 # Configurable CORS: limita orígenes en producción usando la variable de entorno
 # `CORS_ORIGINS`. Por defecto permite todos ('*') para facilitar pruebas.
