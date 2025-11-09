@@ -759,7 +759,26 @@ def listar_solicitudes_mis():
 				rutina = Rutina.query.filter_by(id=s.rutina_id).first()
 			except Exception:
 				rutina = None
-			result.append({'id': s.id, 'rutina_id': s.rutina_id, 'rutina_nombre': getattr(rutina, 'nombre', None), 'estado': s.estado, 'nota': s.nota, 'creado_en': creado})
+			# Provide plan/rutina names defensively so the frontend doesn't show 'null'
+			rutina_nombre = None
+			plan_nombre = None
+			try:
+				if rutina and getattr(rutina, 'nombre', None):
+					rutina_nombre = rutina.nombre
+			except Exception:
+				rutina_nombre = None
+			# If the solicitud refers to a plan instead, try to include its nombre
+			if not rutina_nombre and getattr(s, 'plan_id', None):
+				try:
+					from database.database import PlanAlimenticio
+					p = PlanAlimenticio.query.filter_by(id=s.plan_id).first()
+					if p:
+						plan_nombre = getattr(p, 'nombre', None)
+				except Exception:
+					plan_nombre = None
+			# Favor rutina name, then plan name, else None
+			display_nombre = rutina_nombre or plan_nombre or None
+			result.append({'id': s.id, 'rutina_id': s.rutina_id, 'plan_id': s.plan_id, 'rutina_nombre': display_nombre, 'estado': s.estado, 'nota': s.nota, 'creado_en': creado})
 		return jsonify(result), 200
 	except Exception as e:
 		app.logger.exception('listar_solicitudes_mis failed')
