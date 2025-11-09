@@ -218,7 +218,9 @@ export default {
         const res = await api.post('/api/planes', payload)
         if (!res.ok) {
           const err = await res.json().catch(() => ({}))
-          alert('Error: ' + (err.error || JSON.stringify(err)))
+          // Mostrar el detalle completo del error para depuración (incluye received_keys/raw_body_length)
+          console.error('createPlan error detail:', err)
+          alert('Error creando plan (ver consola para detalle)\n' + JSON.stringify(err))
           return
         }
         // reset form and refresh list
