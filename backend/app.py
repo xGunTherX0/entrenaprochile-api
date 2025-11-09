@@ -457,48 +457,48 @@ def listar_rutinas_publicas():
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
-	@app.route('/api/rutinas/<int:rutina_id>', methods=['GET'])
-	def obtener_rutina_publica(rutina_id):
-		"""Devuelve la rutina por id si es pública. Si no es pública, devuelve 403.
-		Endpoint público para que clientes puedan ver detalle sin autenticación.
-		"""
+@app.route('/api/rutinas/<int:rutina_id>', methods=['GET'])
+def obtener_rutina_publica(rutina_id):
+	"""Devuelve la rutina por id si es pública. Si no es pública, devuelve 403.
+	Endpoint público para que clientes puedan ver detalle sin autenticación.
+	"""
+	try:
+		rutina = Rutina.query.filter_by(id=rutina_id).first()
+		if not rutina:
+			return jsonify({'error': 'rutina not found'}), 404
+		if not getattr(rutina, 'es_publica', False):
+			return jsonify({'error': 'forbidden: rutina not public'}), 403
+
+		creado_val = None
 		try:
-			rutina = Rutina.query.filter_by(id=rutina_id).first()
-			if not rutina:
-				return jsonify({'error': 'rutina not found'}), 404
-			if not getattr(rutina, 'es_publica', False):
-				return jsonify({'error': 'forbidden: rutina not public'}), 403
-
+			creado_val = rutina.creado_en.isoformat() if getattr(rutina, 'creado_en', None) else None
+		except Exception:
 			creado_val = None
-			try:
-				creado_val = rutina.creado_en.isoformat() if getattr(rutina, 'creado_en', None) else None
-			except Exception:
-				creado_val = None
 
+		entrenador_nombre = None
+		entrenador_id = getattr(rutina, 'entrenador_id', None)
+		entrenador_usuario_id = None
+		try:
+			# Be defensive: avoid touching relationship attributes that may trigger unexpected errors
+			ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
+			if ent:
+				entrenador_usuario_id = getattr(ent, 'usuario_id', None)
+				if entrenador_usuario_id:
+					try:
+						# Query Usuario.nombre directly to avoid relying on relationship attributes
+						from database.database import Usuario
+						user = Usuario.query.with_entities(Usuario.nombre).filter_by(id=entrenador_usuario_id).first()
+						if user:
+							entrenador_nombre = getattr(user, 'nombre', None)
+					except Exception:
+						entrenador_nombre = None
+		except Exception:
 			entrenador_nombre = None
-			entrenador_id = getattr(rutina, 'entrenador_id', None)
-			entrenador_usuario_id = None
-			try:
-				# Be defensive: avoid touching relationship attributes that may trigger unexpected errors
-				ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
-				if ent:
-					entrenador_usuario_id = getattr(ent, 'usuario_id', None)
-					if entrenador_usuario_id:
-						try:
-							# Query Usuario.nombre directly to avoid relying on relationship attributes
-							from database.database import Usuario
-							user = Usuario.query.with_entities(Usuario.nombre).filter_by(id=entrenador_usuario_id).first()
-							if user:
-								entrenador_nombre = getattr(user, 'nombre', None)
-						except Exception:
-							entrenador_nombre = None
-			except Exception:
-				entrenador_nombre = None
 
-			return jsonify({'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': entrenador_id, 'entrenador_usuario_id': entrenador_usuario_id}), 200
-		except Exception as e:
-			app.logger.exception('obtener_rutina_publica failed')
-			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+		return jsonify({'id': rutina.id, 'nombre': rutina.nombre, 'descripcion': rutina.descripcion, 'nivel': rutina.nivel, 'es_publica': rutina.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': entrenador_id, 'entrenador_usuario_id': entrenador_usuario_id}), 200
+	except Exception as e:
+		app.logger.exception('obtener_rutina_publica failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
 # Ruta pública alternativa y explícita para detalle de rutina, evita conflicto con
@@ -818,39 +818,40 @@ def listar_planes_publicos():
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
-	@app.route('/api/planes/mis', methods=['GET'])
-	@jwt_required
-	def listar_planes_mis():
-		"""Devuelve los planes creados por el entrenador autenticado.
-		Requiere JWT y que el usuario tenga rol de entrenador (fila Entrenador).
-		"""
-		token_user_id = request.jwt_payload.get('user_id')
-		if not token_user_id:
-			return jsonify({'error': 'authentication required'}), 401
 
-		try:
-			entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
-		except Exception:
-			entrenador = None
+@app.route('/api/planes/mis', methods=['GET'])
+@jwt_required
+def listar_planes_mis():
+    """Devuelve los planes creados por el entrenador autenticado.
+    Requiere JWT y que el usuario tenga rol de entrenador (fila Entrenador).
+    """
+    token_user_id = request.jwt_payload.get('user_id')
+    if not token_user_id:
+        return jsonify({'error': 'authentication required'}), 401
 
-		if not entrenador:
-			return jsonify({'error': 'forbidden: not entrenador'}), 403
+    try:
+        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+    except Exception:
+        entrenador = None
 
-		try:
-			from database.database import PlanAlimenticio
-			planes = PlanAlimenticio.query.filter_by(entrenador_id=entrenador.id).order_by(PlanAlimenticio.creado_en.desc()).all()
-			result = []
-			for p in planes:
-				creado = None
-				try:
-					creado = p.creado_en.isoformat() if getattr(p, 'creado_en', None) else None
-				except Exception:
-					creado = None
-				result.append({'id': p.id, 'nombre': p.nombre, 'descripcion': p.descripcion, 'contenido': p.contenido, 'es_publico': p.es_publico, 'creado_en': creado, 'entrenador_id': p.entrenador_id})
-			return jsonify(result), 200
-		except Exception as e:
-			app.logger.exception('listar_planes_mis failed')
-			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+    if not entrenador:
+        return jsonify({'error': 'forbidden: not entrenador'}), 403
+
+    try:
+        from database.database import PlanAlimenticio
+        planes = PlanAlimenticio.query.filter_by(entrenador_id=entrenador.id).order_by(PlanAlimenticio.creado_en.desc()).all()
+        result = []
+        for p in planes:
+            creado = None
+            try:
+                creado = p.creado_en.isoformat() if getattr(p, 'creado_en', None) else None
+            except Exception:
+                creado = None
+            result.append({'id': p.id, 'nombre': p.nombre, 'descripcion': p.descripcion, 'contenido': p.contenido, 'es_publico': p.es_publico, 'creado_en': creado, 'entrenador_id': p.entrenador_id})
+        return jsonify(result), 200
+    except Exception as e:
+        app.logger.exception('listar_planes_mis failed')
+        return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
 @app.route('/api/planes/<int:plan_id>/solicitar', methods=['POST'])
