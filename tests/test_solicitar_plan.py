@@ -72,3 +72,4 @@ def test_entrenador_crea_plan_y_cliente_solicita(client):
     sols = rv.get_json()
     ids = [s.get('id') for s in sols]
     assert solicitud_id in ids
+

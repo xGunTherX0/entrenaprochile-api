@@ -720,7 +720,9 @@ def solicitar_plan(rutina_id):
 
 		# Insert a new SolicitudPlan
 		from database.database import SolicitudPlan
-		s = SolicitudPlan(cliente_id=cliente.id, rutina_id=rutina.id, estado='pendiente')
+		# For rutina-based requests we auto-accept (estado 'aceptado') so the
+		# cliente sees the solicitud active immediately (workflow: rutina -> plan)
+		s = SolicitudPlan(cliente_id=cliente.id, rutina_id=rutina.id, estado='aceptado')
 		db.session.add(s)
 		db.session.commit()
 		return jsonify({'message': 'solicitud creada', 'id': s.id}), 201
