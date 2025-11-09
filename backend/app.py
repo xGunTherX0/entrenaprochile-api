@@ -777,7 +777,7 @@ def listar_solicitudes_mis():
 				except Exception:
 					plan_nombre = None
 			# Favor rutina name, then plan name, else None
-			display_nombre = rutina_nombre or plan_nombre or None
+			display_nombre = rutina_nombre or plan_nombre or 'Sin nombre'
 			result.append({'id': s.id, 'rutina_id': s.rutina_id, 'plan_id': s.plan_id, 'rutina_nombre': display_nombre, 'estado': s.estado, 'nota': s.nota, 'creado_en': creado})
 		return jsonify(result), 200
 	except Exception as e:
