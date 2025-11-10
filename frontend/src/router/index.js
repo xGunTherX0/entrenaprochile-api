@@ -11,78 +11,31 @@ import AdminMetricas from '../views/admin/Metricas.vue'
 import AdminAprobar from '../views/admin/Aprobar.vue'
 
 const routes = [
-  {
-    path: '/',
-    name: 'Login',
-    component: Login
-  }
-  ,{
-    path: '/entrenador',
-    redirect: '/entrenador/rutinas'
-  },
-  { 
-    path: '/entrenador/rutinas',
-    name: 'EntrenadorRutinas',
-    component: EntrenadorDashboard
-  },
-  {
-    path: '/entrenador/planes',
-    name: 'EntrenadorPlanes',
-    component: EntrenadorDashboard
-  },
-  {
-    path: '/entrenador/publicar',
-    name: 'EntrenadorPublicar',
-    component: EntrenadorDashboard
-  },
+  { path: '/', name: 'Login', component: Login },
+
+  { path: '/entrenador', redirect: '/entrenador/rutinas' },
+  { path: '/entrenador/rutinas', name: 'EntrenadorRutinas', component: EntrenadorDashboard },
+  { path: '/entrenador/planes', name: 'EntrenadorPlanes', component: EntrenadorDashboard },
+  { path: '/entrenador/publicar', name: 'EntrenadorPublicar', component: EntrenadorDashboard },
+
   {
     path: '/cliente',
-    redirect: '/cliente/mediciones'
+    name: 'Cliente',
+    component: () => import('../views/ClienteLayout.vue'),
+    redirect: '/cliente/mediciones',
+    children: [
+      { path: 'mediciones', name: 'ClienteMediciones', component: () => import('../views/ClienteMediciones.vue') },
+      { path: 'explorar', name: 'ClienteExplorar', component: () => import('../views/ExplorarRutinas.vue') },
+      { path: 'misrutinas', name: 'ClienteMisRutinas', component: () => import('../views/MisRutinas.vue') },
+      { path: 'rutina/:id', name: 'ClienteRutina', component: () => import('../views/ClienteRutina.vue'), props: true },
+      { path: 'plan/:id', name: 'ClientePlan', component: () => import('../views/ClientePlan.vue'), props: true },
+      { path: 'planes', name: 'ClientePlanes', component: () => import('../views/MisPlanes.vue') }
+    ]
   },
+
+  { path: '/home', name: 'Home', component: Home },
+
   {
-    path: '/cliente/mediciones',
-    name: 'ClienteMediciones',
-    component: ClienteDashboard
-  },
-  {
-    path: '/cliente/explorar',
-    name: 'ClienteExplorar',
-    component: () => import('../views/ExplorarRutinas.vue')
-  },
-  {
-    path: '/cliente/misrutinas',
-    name: 'ClienteMisRutinas',
-    component: () => import('../views/MisRutinas.vue')
-  },
-  {
-    path: '/cliente/rutina/:id',
-    name: 'ClienteRutina',
-    component: ClienteRutina,
-    props: true
-  },
-  {
-    path: '/cliente/plan/:id',
-    name: 'ClientePlan',
-    // lazy load a simple component for plan detail (we'll create ClientePlan.vue)
-    component: () => import('../views/ClientePlan.vue'),
-    props: true
-  },
-  {
-    path: '/cliente/planes',
-    name: 'ClientePlanes',
-    component: () => import('../views/MisPlanes.vue')
-  },
-  {
-    path: '/cliente/misplanes',
-    name: 'ClienteMisPlanes',
-    redirect: '/cliente/planes'
-  },
-  {
-    path: '/home',
-    name: 'Home',
-    component: Home
-  }
-  ,{
     path: '/admin',
     name: 'Admin',
     component: Admin,
