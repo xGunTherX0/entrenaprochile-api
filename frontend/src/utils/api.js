@@ -25,17 +25,17 @@ async function request(path, opts = {}) {
     // If caller passed { skipAuth: true } we return the response so the caller can decide
     // how to handle 401/403 (for example when fetching a public resource).
     if (res && (res.status === 401 || res.status === 403) && !opts.skipAuth) {
-      // Show toast and redirect to login
+      // Inform the user but DO NOT forcibly clear local session or redirect.
+      // Automatic logout on any 401/403 caused accidental sign-outs (e.g. flaky
+      // network, token verification race, or transient server issues). Keep
+      // the token in localStorage so the user stays logged in and let UI
+      // components handle failures per-request if they need to.
       try {
-        toast.show('Sesión expirada o no autorizada. Redirigiendo al login...', 2000)
+        toast.show('No autorizado o sesión inválida — las acciones pueden fallar, por favor reintenta. Si sigues teniendo problemas cierra sesión e inicia sesión nuevamente.', 4000)
       } catch (e) {}
-      try {
-        auth.clearSession()
-      } catch (e) {}
-      // allow the toast to be visible briefly before navigating
-      setTimeout(() => {
-        try { router.push('/') } catch (e) { window.location.href = '/' }
-      }, 1000)
+      // Return the response so caller can decide what to do (show a modal,
+      // attempt retry, or manually clear session). We deliberately avoid
+      // calling auth.clearSession() or router.push('/') here.
     }
     return res
   } catch (e) {
