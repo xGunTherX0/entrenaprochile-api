@@ -3,8 +3,9 @@
     <nav class="w-64 bg-white border-r p-4">
       <h2 class="text-xl font-bold mb-4">Cliente</h2>
       <ul>
-        <li class="mb-2"><button @click="select('explorar')" :class="{'text-blue-600 font-semibold': activePanel==='explorar'}" class="text-left w-full">Explorar Rutinas</button></li>
-        <li class="mb-2"><button @click="select('planes')" :class="{'text-blue-600 font-semibold': activePanel==='planes'}" class="text-left w-full">Mis Planes Nutricionales</button></li>
+  <li class="mb-2"><button @click="select('explorar')" :class="{'text-blue-600 font-semibold': activePanel==='explorar'}" class="text-left w-full">Explorar Rutinas</button></li>
+  <li class="mb-2"><button @click="select('misrutinas')" :class="{'text-blue-600 font-semibold': activePanel==='misrutinas'}" class="text-left w-full">Mis Rutinas</button></li>
+  <li class="mb-2"><button @click="select('planes')" :class="{'text-blue-600 font-semibold': activePanel==='planes'}" class="text-left w-full">Mis Planes Nutricionales</button></li>
         <li class="mb-2"><button @click="select('mediciones')" :class="{'text-blue-600 font-semibold': activePanel==='mediciones'}" class="text-left w-full">Registro de Mediciones</button></li>
       </ul>
       <div class="mt-6">
@@ -40,7 +41,7 @@
 
       </section>
 
-      <section v-if="activePanel === 'explorar'" class="mt-6">
+  <section v-if="activePanel === 'explorar'" class="mt-6">
         <h2 class="text-lg font-semibold mb-2">Explorar Rutinas</h2>
         <div v-if="loadingExplorar" class="bg-white p-4 rounded shadow">Cargando rutinas...</div>
         <div v-else>
@@ -84,6 +85,28 @@
               <div>Página {{ page }} / {{ totalPages }}</div>
               <button :disabled="page>=totalPages" @click="page++" class="px-3 py-1 border rounded">Siguiente</button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="activePanel === 'misrutinas'" class="mt-6">
+        <h2 class="text-lg font-semibold mb-2">Mis Rutinas Guardadas</h2>
+        <div class="bg-white p-4 rounded shadow">
+          <div v-if="loadingMis">Cargando tus rutinas guardadas...</div>
+          <div v-else>
+            <div v-if="misRutinas.length===0" class="text-sm text-gray-600">No tienes rutinas guardadas.</div>
+            <ul class="mt-2 space-y-2">
+              <li v-for="r in misRutinas" :key="r.id" class="p-3 border rounded bg-white flex justify-between items-center">
+                <div>
+                  <div class="font-semibold">{{ r.nombre }}</div>
+                  <div class="text-sm text-gray-600">{{ r.descripcion }}</div>
+                </div>
+                <div class="space-x-2">
+                  <button @click="openRutinaDetail(r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
+                  <button @click="unfollowRutina(r.id)" class="px-3 py-1 bg-red-600 text-white rounded">Eliminar</button>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
       </section>
@@ -301,6 +324,28 @@ export default {
       }
     },
 
+    async unfollowRutina(rutinaId) {
+      if (!rutinaId) return
+      if (!confirm('¿Eliminar esta rutina guardada?')) return
+      try {
+        const res = await api.del(`/api/rutinas/${rutinaId}/seguir`)
+        // attempt to parse body but tolerate non-json
+        let body = {}
+        try { body = await res.json() } catch (e) { body = {} }
+        if (!res.ok) throw new Error(body.error || 'Error eliminando rutina guardada')
+        // remove from local array
+        this.misRutinas = this.misRutinas.filter(r => r.id !== rutinaId)
+        // also remove from localSavedRutinas if present
+        try {
+          this.localSavedRutinas = (this.localSavedRutinas || []).filter(id => id !== rutinaId)
+          localStorage.setItem('saved_rutinas', JSON.stringify(this.localSavedRutinas))
+        } catch (e) {}
+      } catch (err) {
+        console.error('unfollowRutina failed', err)
+        try { alert('No se pudo eliminar la rutina guardada: ' + (err.message || err)) } catch (e) {}
+      }
+    },
+
     openRutinaDetail(rutinaId) {
       this.$router.push(`/cliente/rutina/${rutinaId}`)
     },
@@ -327,7 +372,8 @@ export default {
       }
       if (panel === 'mediciones') this.fetchMediciones()
       if (panel === 'explorar') this.fetchRutinasPublicas()
-      if (panel === 'planes') this.fetchMisRutinas()
+  if (panel === 'planes') this.fetchMisRutinas()
+  if (panel === 'misrutinas') this.fetchMisRutinas()
     },
 
     logout() {
