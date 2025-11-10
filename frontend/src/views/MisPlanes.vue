@@ -2,12 +2,17 @@
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-4">Planes Alimenticios</h1>
     <div class="bg-white p-4 rounded shadow">
-      <div v-if="loading">Cargando planes...</div>
-      <div v-else>
+      <div class="flex items-center justify-between mb-4">
+        <div v-if="loading">Cargando planes...</div>
+        <div class="w-1/3">
+          <input v-model="searchQuery" placeholder="Buscar planes..." class="w-full px-3 py-2 border rounded" />
+        </div>
+      </div>
+      <div v-if="!loading">
         <h3 class="font-semibold mb-2">Planes Públicos</h3>
         <div v-if="planesPublicos.length===0" class="text-sm text-gray-600 mb-4">No hay planes disponibles.</div>
         <ul class="space-y-2 mb-4">
-          <li v-for="p in planesPublicos" :key="p.id" class="p-3 border rounded bg-gray-50">
+          <li v-for="p in filteredPlanes" :key="p.id" class="p-3 border rounded bg-gray-50">
             <div class="flex justify-between items-center">
               <div>
                 <div class="font-semibold">{{ p.nombre }}</div>
@@ -38,7 +43,7 @@
           </li>
         </ul>
 
-      </div>
+          </div>
     </div>
   </div>
 </template>
@@ -53,6 +58,7 @@ export default {
       planesPublicos: [],
       misSolicitudes: [],
       loading: false
+      ,searchQuery: ''
     }
   },
   methods: {
@@ -113,6 +119,16 @@ export default {
   mounted() {
     this.fetchPlanes()
     this.fetchSolicitudes()
+  }
+  ,
+  computed: {
+    filteredPlanes() {
+      const q = (this.searchQuery || '').trim().toLowerCase()
+      if (!q) return this.planesPublicos || []
+      return (this.planesPublicos || []).filter(p => {
+        return (p.nombre || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)
+      })
+    }
   }
 }
 </script>
