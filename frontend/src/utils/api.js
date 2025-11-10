@@ -21,7 +21,10 @@ async function request(path, opts = {}) {
 
   try {
     const res = await fetch(url, opts)
-    if (res && (res.status === 401 || res.status === 403)) {
+    // Only auto-redirect on auth errors when this request expected auth (skipAuth !== true).
+    // If caller passed { skipAuth: true } we return the response so the caller can decide
+    // how to handle 401/403 (for example when fetching a public resource).
+    if (res && (res.status === 401 || res.status === 403) && !opts.skipAuth) {
       // Show toast and redirect to login
       try {
         toast.show('Sesión expirada o no autorizada. Redirigiendo al login...', 2000)

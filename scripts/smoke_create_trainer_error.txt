@@ -1,0 +1,11 @@
+﻿Invoke-RestMethod : Error en el servidor remoto: (409) Conflicto.
+En línea: 1 Carácter: 789
++ ...  try { $r = Invoke-RestMethod -Uri "$base/api/admin/usuarios" 
+-Method ...
++                 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebReque 
+   st:HttpWebRequest) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.Po 
+   werShell.Commands.InvokeRestMethodCommand
+ 
