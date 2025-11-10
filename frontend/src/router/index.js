@@ -50,6 +50,11 @@ const routes = [
     component: ClienteDashboard
   },
   {
+    path: '/cliente/misrutinas',
+    name: 'ClienteMisRutinas',
+    component: () => import('../views/MisRutinas.vue')
+  },
+  {
     path: '/cliente/rutina/:id',
     name: 'ClienteRutina',
     component: ClienteRutina,
@@ -65,7 +70,12 @@ const routes = [
   {
     path: '/cliente/planes',
     name: 'ClientePlanes',
-    component: ClienteDashboard
+    component: () => import('../views/MisPlanes.vue')
+  },
+  {
+    path: '/cliente/misplanes',
+    name: 'ClienteMisPlanes',
+    redirect: '/cliente/planes'
   },
   {
     path: '/home',
