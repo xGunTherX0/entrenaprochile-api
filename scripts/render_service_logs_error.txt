@@ -1,0 +1,10 @@
+﻿Invoke-RestMethod : 404 page not found
+
+En línea: 2 Carácter: 11
++   $logs = Invoke-RestMethod -Uri "https://api.render.com/v1/services/ 
+...
++           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebReque 
+   st:HttpWebRequest) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.Po 
+   werShell.Commands.InvokeRestMethodCommand

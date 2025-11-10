@@ -1,0 +1,345 @@
+﻿{
+    "value":  [
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d48dt3umcj7s73dtvaog",
+                                     "commit":  {
+                                                    "id":  "79a34e812cb58ef5cd16e4aaac8593d90e96337b",
+                                                    "message":  "feat(rutina): auto-accept solicitudes created via rutina and add test",
+                                                    "createdAt":  "2025-11-09T07:04:10Z"
+                                                },
+                                     "status":  "live",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T18:33:53.489373Z",
+                                     "updatedAt":  "2025-11-09T18:36:35.713441Z",
+                                     "startedAt":  "2025-11-09T18:33:53.446415Z",
+                                     "finishedAt":  "2025-11-09T18:36:05.497887Z"
+                                 },
+                      "cursor":  "xvaaL-2-JgZ0M3VtY2o3czczZHR2YW9n"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d483q2om2f8s73deqd80",
+                                     "commit":  {
+                                                    "id":  "79a34e812cb58ef5cd16e4aaac8593d90e96337b",
+                                                    "message":  "feat(rutina): auto-accept solicitudes created via rutina and add test",
+                                                    "createdAt":  "2025-11-09T07:04:10Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T07:04:44.495228Z",
+                                     "updatedAt":  "2025-11-09T18:36:05.492223Z",
+                                     "startedAt":  "2025-11-09T07:06:12.586628Z",
+                                     "finishedAt":  "2025-11-09T07:07:54.164873Z"
+                                 },
+                      "cursor":  "geVM0hsmHGpxMm9tMmY4czczZGVxZDgw"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d483prffte5s73a42o4g",
+                                     "commit":  {
+                                                    "id":  "79a34e812cb58ef5cd16e4aaac8593d90e96337b",
+                                                    "message":  "feat(rutina): auto-accept solicitudes created via rutina and add test",
+                                                    "createdAt":  "2025-11-09T07:04:10Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T07:04:14.188881Z",
+                                     "updatedAt":  "2025-11-09T07:07:54.16286Z",
+                                     "startedAt":  "2025-11-09T07:04:14.157274Z",
+                                     "finishedAt":  "2025-11-09T07:06:10.784066Z"
+                                 },
+                      "cursor":  "geVM0hsmHGpwcmZmdGU1czczYTQybzRn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d483jf6mcj7s73dnkbg0",
+                                     "commit":  {
+                                                    "id":  "4b65007b6690ab53572f2b717d32d3dda35c86a1",
+                                                    "message":  "fix(solicitudes): default display nombre to \u0027Sin nombre\u0027 to avoid frontend showing \u0027null\u0027",
+                                                    "createdAt":  "2025-11-09T06:34:29Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T06:50:38.279322Z",
+                                     "updatedAt":  "2025-11-09T07:06:10.78262Z",
+                                     "startedAt":  "2025-11-09T06:50:38.043462Z",
+                                     "finishedAt":  "2025-11-09T06:53:29.964536Z"
+                                 },
+                      "cursor":  "geVM0hsmHGpqZjZtY2o3czczZG5rYmcw"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d483iji4d50c738h9psg",
+                                     "commit":  {
+                                                    "id":  "4b65007b6690ab53572f2b717d32d3dda35c86a1",
+                                                    "message":  "fix(solicitudes): default display nombre to \u0027Sin nombre\u0027 to avoid frontend showing \u0027null\u0027",
+                                                    "createdAt":  "2025-11-09T06:34:29Z"
+                                                },
+                                     "status":  "canceled",
+                                     "trigger":  "manual",
+                                     "createdAt":  "2025-11-09T06:48:47.643746Z",
+                                     "updatedAt":  "2025-11-09T06:48:51.329248Z",
+                                     "startedAt":  "2025-11-09T06:48:47.507253Z",
+                                     "finishedAt":  "2025-11-09T06:48:51.328557Z"
+                                 },
+                      "cursor":  "geVM0hsmHGppamk0ZDUwYzczOGg5cHNn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d483b48m2f8s73deoppg",
+                                     "commit":  {
+                                                    "id":  "4b65007b6690ab53572f2b717d32d3dda35c86a1",
+                                                    "message":  "fix(solicitudes): default display nombre to \u0027Sin nombre\u0027 to avoid frontend showing \u0027null\u0027",
+                                                    "createdAt":  "2025-11-09T06:34:29Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T06:32:51.329102Z",
+                                     "updatedAt":  "2025-11-09T06:53:29.959543Z",
+                                     "startedAt":  "2025-11-09T06:34:55.072977Z",
+                                     "finishedAt":  "2025-11-09T06:37:05.060253Z"
+                                 },
+                      "cursor":  "geVM0hsmHGpiNDhtMmY4czczZGVvcHBn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d483asjuibrs7390t9gg",
+                                     "commit":  {
+                                                    "id":  "a17405eae3f372f067a8df634f9c8d810ba13b82",
+                                                    "message":  "fix(solicitudes): include plan/rutina names defensively to avoid \u0027Rutina null\u0027 in UI",
+                                                    "createdAt":  "2025-11-09T06:32:16Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T06:32:19.722997Z",
+                                     "updatedAt":  "2025-11-09T06:37:05.058743Z",
+                                     "startedAt":  "2025-11-09T06:32:19.679912Z",
+                                     "finishedAt":  "2025-11-09T06:34:53.136238Z"
+                                 },
+                      "cursor":  "geVM0hsmHGphc2p1aWJyczczOTB0OWdn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d4839524d50c738h3mpg",
+                                     "commit":  {
+                                                    "id":  "ed2ccd1ed976e9d6ca6934ba190e5dea1b5578a5",
+                                                    "message":  "fix(rutinas): make /api/rutinas/mis resilient and add ORM fallback when raw SQL fails",
+                                                    "createdAt":  "2025-11-09T06:21:30Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T06:28:37.963691Z",
+                                     "updatedAt":  "2025-11-09T06:34:53.134682Z",
+                                     "startedAt":  "2025-11-09T06:28:37.792601Z",
+                                     "finishedAt":  "2025-11-09T06:31:04.159017Z"
+                                 },
+                      "cursor":  "geVM0hsmHGo5NTI0ZDUwYzczOGgzbXBn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d4835r56ubrc738t36b0",
+                                     "commit":  {
+                                                    "id":  "ed2ccd1ed976e9d6ca6934ba190e5dea1b5578a5",
+                                                    "message":  "fix(rutinas): make /api/rutinas/mis resilient and add ORM fallback when raw SQL fails",
+                                                    "createdAt":  "2025-11-09T06:21:30Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T06:21:33.549456Z",
+                                     "updatedAt":  "2025-11-09T06:31:04.157599Z",
+                                     "startedAt":  "2025-11-09T06:21:33.513959Z",
+                                     "finishedAt":  "2025-11-09T06:23:07.612725Z"
+                                 },
+                      "cursor":  "geVM0hsmHGo1cjU2dWJyYzczOHQzNmIw"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482vs1r0fns73fplmfg",
+                                     "commit":  {
+                                                    "id":  "0316484a9dd35efca7e01a730cf6023f84d52e4f",
+                                                    "message":  "chore: remove crear_plan debug diagnostic; return minimal error for missing nombre",
+                                                    "createdAt":  "2025-11-09T06:06:42Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T06:08:50.083198Z",
+                                     "updatedAt":  "2025-11-09T06:23:07.611538Z",
+                                     "startedAt":  "2025-11-09T06:08:49.971651Z",
+                                     "finishedAt":  "2025-11-09T06:11:12.440572Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHd2czFyMGZuczczZnBsbWZn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482utali9vc73c8l61g",
+                                     "commit":  {
+                                                    "id":  "0316484a9dd35efca7e01a730cf6023f84d52e4f",
+                                                    "message":  "chore: remove crear_plan debug diagnostic; return minimal error for missing nombre",
+                                                    "createdAt":  "2025-11-09T06:06:42Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T06:06:46.547635Z",
+                                     "updatedAt":  "2025-11-09T06:11:12.43647Z",
+                                     "startedAt":  "2025-11-09T06:06:46.515141Z",
+                                     "finishedAt":  "2025-11-09T06:08:39.04017Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHd1dGFsaTl2YzczYzhsNjFn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482t5ffte5s73a3udjg",
+                                     "commit":  {
+                                                    "id":  "ff3e3b8b9066bce61e5a427d709cfc2705e77f4c",
+                                                    "message":  "test: add integration test for crear_plan + solicitar_plan (Flask test client)",
+                                                    "createdAt":  "2025-11-09T06:02:59Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T06:03:02.075505Z",
+                                     "updatedAt":  "2025-11-09T06:08:39.038749Z",
+                                     "startedAt":  "2025-11-09T06:03:02.045998Z",
+                                     "finishedAt":  "2025-11-09T06:06:28.95118Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHd0NWZmdGU1czczYTN1ZGpn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482o62g0ims73dveh4g",
+                                     "commit":  {
+                                                    "id":  "20f81eccf419b4fc0076ef9adc0f37e5caad59b4",
+                                                    "message":  "fix(frontend): avoid requesting public rutina with null id; validate route id",
+                                                    "createdAt":  "2025-11-09T05:51:55Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T05:52:26.079779Z",
+                                     "updatedAt":  "2025-11-09T06:06:28.946607Z",
+                                     "startedAt":  "2025-11-09T05:54:02.747371Z",
+                                     "finishedAt":  "2025-11-09T05:55:51.037321Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHdvNjJnMGltczczZHZlaDRn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482nvm3jp1c73bqtrq0",
+                                     "commit":  {
+                                                    "id":  "20f81eccf419b4fc0076ef9adc0f37e5caad59b4",
+                                                    "message":  "fix(frontend): avoid requesting public rutina with null id; validate route id",
+                                                    "createdAt":  "2025-11-09T05:51:55Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T05:52:00.068153Z",
+                                     "updatedAt":  "2025-11-09T05:55:51.035874Z",
+                                     "startedAt":  "2025-11-09T05:52:00.007977Z",
+                                     "finishedAt":  "2025-11-09T05:54:01.137993Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHdudm0zanAxYzczYnF0cnEw"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482mibuibrs7390qfn0",
+                                     "commit":  {
+                                                    "id":  "420825ac9dbc556fe8bd5f7e5313a194df15c218",
+                                                    "message":  "fix(rutinas): return 400 for non-int public rutina ids (handle \u0027null\u0027)",
+                                                    "createdAt":  "2025-11-09T05:48:54Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T05:48:58.119507Z",
+                                     "updatedAt":  "2025-11-09T05:54:01.136754Z",
+                                     "startedAt":  "2025-11-09T05:48:58.088387Z",
+                                     "finishedAt":  "2025-11-09T05:51:10.172687Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHdtaWJ1aWJyczczOTBxZm4w"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482cb0m2f8s73dele8g",
+                                     "commit":  {
+                                                    "id":  "86041144cf63aae72bfc35f555a638d9b96581e7",
+                                                    "message":  "fix(api): import PlanAlimenticio in solicitar_plan_por_plan to prevent NameError",
+                                                    "createdAt":  "2025-11-09T05:26:48Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T05:27:10.42636Z",
+                                     "updatedAt":  "2025-11-09T05:51:10.170981Z",
+                                     "startedAt":  "2025-11-09T05:29:00.446842Z",
+                                     "finishedAt":  "2025-11-09T05:30:37.853308Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHdjYjBtMmY4czczZGVsZThn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d482c76mcj7s7380b5cg",
+                                     "commit":  {
+                                                    "id":  "86041144cf63aae72bfc35f555a638d9b96581e7",
+                                                    "message":  "fix(api): import PlanAlimenticio in solicitar_plan_por_plan to prevent NameError",
+                                                    "createdAt":  "2025-11-09T05:26:48Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "new_commit",
+                                     "createdAt":  "2025-11-09T05:26:53.209172Z",
+                                     "updatedAt":  "2025-11-09T05:30:37.848997Z",
+                                     "startedAt":  "2025-11-09T05:26:53.172434Z",
+                                     "finishedAt":  "2025-11-09T05:28:58.47147Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHdjNzZtY2o3czczODBiNWNn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d48239hr0fns73fp43n0",
+                                     "commit":  {
+                                                    "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                                    "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                                    "createdAt":  "2025-11-09T03:40:31Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T05:07:51.76507Z",
+                                     "updatedAt":  "2025-11-09T05:28:58.469667Z",
+                                     "startedAt":  "2025-11-09T05:07:51.31648Z",
+                                     "finishedAt":  "2025-11-09T05:16:35.357869Z"
+                                 },
+                      "cursor":  "y8GnzsfvpHczOWhyMGZuczczZnA0M24w"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d480rm0m2f8s73deg3qg",
+                                     "commit":  {
+                                                    "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                                    "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                                    "createdAt":  "2025-11-09T03:40:31Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T03:43:21.424192Z",
+                                     "updatedAt":  "2025-11-09T05:16:35.356508Z",
+                                     "startedAt":  "2025-11-09T03:45:27.954463Z",
+                                     "finishedAt":  "2025-11-09T03:50:31.508209Z"
+                                 },
+                      "cursor":  "MQtgpjhTMexybTBtMmY4czczZGVnM3Fn"
+                  },
+                  {
+                      "deploy":  {
+                                     "id":  "dep-d480qsqg0ims73dv7lbg",
+                                     "commit":  {
+                                                    "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                                    "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                                    "createdAt":  "2025-11-09T03:40:31Z"
+                                                },
+                                     "status":  "deactivated",
+                                     "trigger":  "api",
+                                     "createdAt":  "2025-11-09T03:41:41.103237Z",
+                                     "updatedAt":  "2025-11-09T03:50:31.506829Z",
+                                     "startedAt":  "2025-11-09T03:42:42.17552Z",
+                                     "finishedAt":  "2025-11-09T03:45:26.043996Z"
+                                 },
+                      "cursor":  "MQtgpjhTMexxc3FnMGltczczZHY3bGJn"
+                  }
+              ],
+    "Count":  20
+}

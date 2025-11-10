@@ -1,0 +1,54 @@
+﻿{
+    "autoDeploy":  "yes",
+    "autoDeployTrigger":  "commit",
+    "branch":  "master",
+    "createdAt":  "2025-10-12T16:31:20.853212Z",
+    "dashboardUrl":  "https://dashboard.render.com/web/srv-d3ltfm1r0fns73ea3qmg",
+    "environmentId":  "evm-d3kilql6ubrc73e0qeu0",
+    "id":  "srv-d3ltfm1r0fns73ea3qmg",
+    "name":  "entrenaprochile-api",
+    "notifyOnFail":  "default",
+    "ownerId":  "tea-d3kicok9c44c73agu41g",
+    "repo":  "https://github.com/xGunTherX0/entrenaprochile-api",
+    "rootDir":  "",
+    "serviceDetails":  {
+                           "buildPlan":  "starter",
+                           "cache":  {
+                                         "profile":  "no-cache"
+                                     },
+                           "env":  "python",
+                           "envSpecificDetails":  {
+                                                      "buildCommand":  "pip install -r requirements.txt",
+                                                      "startCommand":  "gunicorn wsgi:app --bind 0.0.0.0:$PORT"
+                                                  },
+                           "healthCheckPath":  "",
+                           "ipAllowList":  [
+                                               {
+                                                   "cidrBlock":  "0.0.0.0/0",
+                                                   "description":  "everywhere"
+                                               }
+                                           ],
+                           "maintenanceMode":  {
+                                                   "enabled":  false,
+                                                   "uri":  ""
+                                               },
+                           "numInstances":  1,
+                           "openPorts":  null,
+                           "plan":  "free",
+                           "previews":  {
+                                            "generation":  "off"
+                                        },
+                           "pullRequestPreviewsEnabled":  "no",
+                           "region":  "oregon",
+                           "runtime":  "python",
+                           "sshAddress":  "srv-d3ltfm1r0fns73ea3qmg@ssh.oregon.render.com",
+                           "url":  "https://entrenaprochile-api.onrender.com"
+                       },
+    "slug":  "entrenaprochile-api",
+    "suspended":  "not_suspended",
+    "suspenders":  [
+
+                   ],
+    "type":  "web_service",
+    "updatedAt":  "2025-11-09T18:36:07.319878Z"
+}

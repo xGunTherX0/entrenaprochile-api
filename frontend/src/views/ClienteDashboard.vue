@@ -121,7 +121,7 @@
                     <div v-if="s.nota" class="text-sm mt-1">Nota: {{ s.nota }}</div>
                   </div>
                   <div>
-                    <button @click="openRutinaDetail(s.rutina_id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver rutina</button>
+                    <button @click="openPlanFromSolicitud(s)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver plan</button>
                   </div>
                 </div>
               </li>
@@ -305,6 +305,16 @@ export default {
       this.$router.push(`/cliente/rutina/${rutinaId}`)
     },
 
+    openRutinaFromSolicitud(rutinaId) {
+      // Defensive: ensure rutinaId is valid before navigating (prevents /cliente/rutina/null)
+      if (!rutinaId || rutinaId === 'null' || isNaN(Number(rutinaId))) {
+        // show a friendly message instead of navigating to an invalid route
+        try { alert('ID de rutina inválido') } catch (e) { console.warn('ID inválido') }
+        return
+      }
+      this.openRutinaDetail(rutinaId)
+    },
+
     // Navegar entre paneles y sincronizar con la ruta
     select(panel) {
       if (!panel) return
@@ -351,6 +361,24 @@ export default {
     openPlanDetail(planId) {
       // For now reuse rutina detail route? We'll navigate to a simple route showing plan id
       this.$router.push(`/cliente/plan/${planId}`)
+    },
+    openPlanFromSolicitud(solicitud) {
+      // solicitud is an object with possible plan_id and rutina_id
+      if (!solicitud) return
+      const planId = solicitud.plan_id
+      const rutId = solicitud.rutina_id
+      if (planId) {
+        // navigate to plan detail and include solicitudId in query so the plan view
+        // can offer a 'Cancelar plan' action tied to this solicitud
+        this.$router.push({ path: `/cliente/plan/${planId}`, query: { solicitudId: solicitud.id } })
+        return
+      }
+      // No plan assigned yet: show friendly info and allow user to cancel if they want
+      if (rutId) {
+        try { alert('Aún no hay un plan asignado a esta solicitud. Intenta más tarde o contacta con tu entrenador.') } catch (e) {}
+        return
+      }
+      try { alert('Solicitud inválida: sin rutina ni plan asociado.') } catch (e) {}
     },
     async fetchMisRutinas() {
       this.loadingMis = true

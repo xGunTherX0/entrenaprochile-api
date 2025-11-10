@@ -1,0 +1,18 @@
+HTTP/1.1 200 OK
+Date: Sun, 09 Nov 2025 03:39:16 GMT
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+CF-RAY: 99ba48324defe798-SCL
+access-control-allow-credentials: true
+access-control-allow-headers: Authorization, Content-Type
+access-control-allow-methods: DELETE, GET, OPTIONS, POST, PUT
+access-control-allow-origin: https://cfmc-entrenaprochile.netlify.app
+allow: OPTIONS, HEAD, GET, POST
+rndr-id: e63cfc93-aac1-4c10
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+Server: cloudflare
+alt-svc: h3=":443"; ma=86400
+

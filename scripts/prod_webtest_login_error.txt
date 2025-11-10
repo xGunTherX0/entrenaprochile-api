@@ -1,0 +1,11 @@
+﻿Invoke-RestMethod : Error en el servidor remoto: (500) Error interno del 
+servidor.
+En línea: 2 Carácter: 12
++   $login = Invoke-RestMethod -Method Post -Uri "$base/api/usuarios/lo 
+...
++            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebReque 
+   st:HttpWebRequest) [Invoke-RestMethod], WebException
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.Po 
+   werShell.Commands.InvokeRestMethodCommand
+ 

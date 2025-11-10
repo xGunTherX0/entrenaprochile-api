@@ -11,6 +11,10 @@
         <h3 class="font-semibold mb-2">Contenido del plan</h3>
         <div v-html="plan.contenido"></div>
       </div>
+      <div class="mt-4" v-if="solicitudId">
+        <button @click="cancelSolicitud" class="px-3 py-2 bg-red-600 text-white rounded mr-2">Cancelar plan</button>
+        <button @click="$router.push('/cliente/planes')" class="px-3 py-2 bg-gray-200 rounded">Volver a solicitudes</button>
+      </div>
     </div>
   </div>
 </template>
@@ -21,21 +25,42 @@ import api from '../utils/api.js'
 export default {
   name: 'ClientePlan',
   data() {
-    return { plan: null, loading: true, error: null }
+    return { plan: null, loading: true, error: null, solicitudId: null }
+  },
+  methods: {
+    async fetchPlanById(id) {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await api.get(`/api/planes/${id}`, { skipAuth: true })
+        const body = await res.json()
+        if (!res.ok) throw new Error(body.error || 'Error fetching plan')
+        this.plan = body
+      } catch (err) {
+        this.error = err.message || String(err)
+      } finally {
+        this.loading = false
+      }
+    },
+    async cancelSolicitud() {
+      if (!this.solicitudId) return
+      if (!confirm('¿Seguro que quieres cancelar esta solicitud?')) return
+      try {
+        const res = await api.del(`/api/solicitudes/${this.solicitudId}`)
+        const body = await res.json()
+        if (!res.ok) throw new Error(body.error || 'Error cancelando solicitud')
+        try { alert('Solicitud cancelada') } catch (e) {}
+        this.$router.push('/cliente/planes')
+      } catch (err) {
+        try { alert('No se pudo cancelar: ' + (err.message || err)) } catch (e) {}
+      }
+    }
   },
   async mounted() {
     const id = this.$route.params.id
-    try {
-      const res = await api.get(`/api/planes`, { skipAuth: true })
-      const list = await res.json()
-      if (!res.ok) throw new Error(list.error || 'Error fetching plans')
-      this.plan = list.find(p => p.id === Number(id)) || null
-      if (!this.plan) this.error = 'Plan no encontrado'
-    } catch (err) {
-      this.error = err.message
-    } finally {
-      this.loading = false
-    }
+    // solicitud id may be passed via query string
+    this.solicitudId = this.$route.query && this.$route.query.solicitudId ? this.$route.query.solicitudId : null
+    if (id) await this.fetchPlanById(id)
   }
 }
 </script>

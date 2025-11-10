@@ -1,0 +1,98 @@
+﻿{
+    "id":  "691022c1dcfd48e6c75af227",
+    "site_id":  "ee7c0cff-df44-4456-b820-e3e008161104",
+    "build_id":  null,
+    "state":  "ready",
+    "name":  "cfmc-entrenaprochile",
+    "url":  "http://cfmc-entrenaprochile.netlify.app",
+    "ssl_url":  "https://cfmc-entrenaprochile.netlify.app",
+    "admin_url":  "https://app.netlify.com/projects/cfmc-entrenaprochile",
+    "deploy_url":  "http://691022c1dcfd48e6c75af227--cfmc-entrenaprochile.netlify.app",
+    "deploy_ssl_url":  "https://691022c1dcfd48e6c75af227--cfmc-entrenaprochile.netlify.app",
+    "created_at":  "2025-11-09T05:12:33.603Z",
+    "updated_at":  "2025-11-09T05:12:37.023Z",
+    "user_id":  "68e69ccee760fa39ce5be717",
+    "error_message":  null,
+    "required":  [
+
+                 ],
+    "required_functions":  [
+
+                           ],
+    "commit_ref":  null,
+    "review_id":  null,
+    "branch":  "master",
+    "commit_url":  null,
+    "skipped":  null,
+    "locked":  null,
+    "title":  null,
+    "commit_message":  null,
+    "review_url":  null,
+    "published_at":  "2025-11-09T05:12:36.993Z",
+    "context":  "production",
+    "deploy_time":  3,
+    "available_functions":  [
+
+                            ],
+    "screenshot_url":  null,
+    "committer":  null,
+    "skipped_log":  null,
+    "manual_deploy":  true,
+    "plugin_state":  "none",
+    "lighthouse_plugin_scores":  null,
+    "links":  {
+                  "permalink":  "https://691022c1dcfd48e6c75af227--cfmc-entrenaprochile.netlify.app",
+                  "alias":  "https://cfmc-entrenaprochile.netlify.app",
+                  "branch":  null
+              },
+    "framework":  null,
+    "entry_path":  null,
+    "views_count":  null,
+    "function_schedules":  [
+
+                           ],
+    "public_repo":  true,
+    "pending_review_reason":  null,
+    "lighthouse":  null,
+    "edge_functions_present":  null,
+    "expires_at":  null,
+    "blobs_region":  "us-east-1",
+    "deploy_validations_report":  null,
+    "strict_contributor_verification_failure":  false,
+    "agent_runner_id":  null,
+    "summary":  {
+                    "status":  "ready",
+                    "messages":  [
+                                     {
+                                         "type":  "info",
+                                         "title":  "4 new files uploaded",
+                                         "description":  "1 generated page and 3 assets changed.",
+                                         "details":  "New pages include:\n- index.html\n"
+                                     },
+                                     {
+                                         "type":  "info",
+                                         "title":  "No redirect rules processed",
+                                         "description":  "This deploy did not include any redirect rules. [Learn more about redirects](https://docs.netlify.com/routing/redirects/)",
+                                         "details":  ""
+                                     },
+                                     {
+                                         "type":  "info",
+                                         "title":  "No header rules processed",
+                                         "description":  "This deploy did not include any header rules. [Learn more about headers](https://docs.netlify.com/routing/headers/)",
+                                         "details":  ""
+                                     },
+                                     {
+                                         "type":  "info",
+                                         "title":  "No functions deployed",
+                                         "description":  "This deploy did not include any functions. [Learn more about Netlify Functions](https://docs.netlify.com/functions/overview/)",
+                                         "details":  null
+                                     },
+                                     {
+                                         "type":  "info",
+                                         "title":  "No edge functions deployed",
+                                         "description":  "This deploy did not include any edge functions. [Learn more about Edge Functions](https://docs.netlify.com/edge-functions/overview/)",
+                                         "details":  null
+                                     }
+                                 ]
+                }
+}

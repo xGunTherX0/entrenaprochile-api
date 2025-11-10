@@ -1,0 +1,341 @@
+﻿[
+    {
+        "deploy":  {
+                       "id":  "dep-d4839524d50c738h3mpg",
+                       "commit":  {
+                                      "id":  "ed2ccd1ed976e9d6ca6934ba190e5dea1b5578a5",
+                                      "message":  "fix(rutinas): make /api/rutinas/mis resilient and add ORM fallback when raw SQL fails",
+                                      "createdAt":  "2025-11-09T06:21:30Z"
+                                  },
+                       "status":  "update_in_progress",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T06:28:37.963691Z",
+                       "updatedAt":  "2025-11-09T06:30:08.765768Z",
+                       "startedAt":  "2025-11-09T06:28:37.792601Z"
+                   },
+        "cursor":  "geVM0hsmHGo5NTI0ZDUwYzczOGgzbXBn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d4835r56ubrc738t36b0",
+                       "commit":  {
+                                      "id":  "ed2ccd1ed976e9d6ca6934ba190e5dea1b5578a5",
+                                      "message":  "fix(rutinas): make /api/rutinas/mis resilient and add ORM fallback when raw SQL fails",
+                                      "createdAt":  "2025-11-09T06:21:30Z"
+                                  },
+                       "status":  "live",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T06:21:33.549456Z",
+                       "updatedAt":  "2025-11-09T06:23:40.334705Z",
+                       "startedAt":  "2025-11-09T06:21:33.513959Z",
+                       "finishedAt":  "2025-11-09T06:23:07.612725Z"
+                   },
+        "cursor":  "geVM0hsmHGo1cjU2dWJyYzczOHQzNmIw"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482vs1r0fns73fplmfg",
+                       "commit":  {
+                                      "id":  "0316484a9dd35efca7e01a730cf6023f84d52e4f",
+                                      "message":  "chore: remove crear_plan debug diagnostic; return minimal error for missing nombre",
+                                      "createdAt":  "2025-11-09T06:06:42Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T06:08:50.083198Z",
+                       "updatedAt":  "2025-11-09T06:23:07.611538Z",
+                       "startedAt":  "2025-11-09T06:08:49.971651Z",
+                       "finishedAt":  "2025-11-09T06:11:12.440572Z"
+                   },
+        "cursor":  "y8GnzsfvpHd2czFyMGZuczczZnBsbWZn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482utali9vc73c8l61g",
+                       "commit":  {
+                                      "id":  "0316484a9dd35efca7e01a730cf6023f84d52e4f",
+                                      "message":  "chore: remove crear_plan debug diagnostic; return minimal error for missing nombre",
+                                      "createdAt":  "2025-11-09T06:06:42Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T06:06:46.547635Z",
+                       "updatedAt":  "2025-11-09T06:11:12.43647Z",
+                       "startedAt":  "2025-11-09T06:06:46.515141Z",
+                       "finishedAt":  "2025-11-09T06:08:39.04017Z"
+                   },
+        "cursor":  "y8GnzsfvpHd1dGFsaTl2YzczYzhsNjFn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482t5ffte5s73a3udjg",
+                       "commit":  {
+                                      "id":  "ff3e3b8b9066bce61e5a427d709cfc2705e77f4c",
+                                      "message":  "test: add integration test for crear_plan + solicitar_plan (Flask test client)",
+                                      "createdAt":  "2025-11-09T06:02:59Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T06:03:02.075505Z",
+                       "updatedAt":  "2025-11-09T06:08:39.038749Z",
+                       "startedAt":  "2025-11-09T06:03:02.045998Z",
+                       "finishedAt":  "2025-11-09T06:06:28.95118Z"
+                   },
+        "cursor":  "y8GnzsfvpHd0NWZmdGU1czczYTN1ZGpn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482o62g0ims73dveh4g",
+                       "commit":  {
+                                      "id":  "20f81eccf419b4fc0076ef9adc0f37e5caad59b4",
+                                      "message":  "fix(frontend): avoid requesting public rutina with null id; validate route id",
+                                      "createdAt":  "2025-11-09T05:51:55Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T05:52:26.079779Z",
+                       "updatedAt":  "2025-11-09T06:06:28.946607Z",
+                       "startedAt":  "2025-11-09T05:54:02.747371Z",
+                       "finishedAt":  "2025-11-09T05:55:51.037321Z"
+                   },
+        "cursor":  "y8GnzsfvpHdvNjJnMGltczczZHZlaDRn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482nvm3jp1c73bqtrq0",
+                       "commit":  {
+                                      "id":  "20f81eccf419b4fc0076ef9adc0f37e5caad59b4",
+                                      "message":  "fix(frontend): avoid requesting public rutina with null id; validate route id",
+                                      "createdAt":  "2025-11-09T05:51:55Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T05:52:00.068153Z",
+                       "updatedAt":  "2025-11-09T05:55:51.035874Z",
+                       "startedAt":  "2025-11-09T05:52:00.007977Z",
+                       "finishedAt":  "2025-11-09T05:54:01.137993Z"
+                   },
+        "cursor":  "y8GnzsfvpHdudm0zanAxYzczYnF0cnEw"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482mibuibrs7390qfn0",
+                       "commit":  {
+                                      "id":  "420825ac9dbc556fe8bd5f7e5313a194df15c218",
+                                      "message":  "fix(rutinas): return 400 for non-int public rutina ids (handle \u0027null\u0027)",
+                                      "createdAt":  "2025-11-09T05:48:54Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T05:48:58.119507Z",
+                       "updatedAt":  "2025-11-09T05:54:01.136754Z",
+                       "startedAt":  "2025-11-09T05:48:58.088387Z",
+                       "finishedAt":  "2025-11-09T05:51:10.172687Z"
+                   },
+        "cursor":  "y8GnzsfvpHdtaWJ1aWJyczczOTBxZm4w"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482cb0m2f8s73dele8g",
+                       "commit":  {
+                                      "id":  "86041144cf63aae72bfc35f555a638d9b96581e7",
+                                      "message":  "fix(api): import PlanAlimenticio in solicitar_plan_por_plan to prevent NameError",
+                                      "createdAt":  "2025-11-09T05:26:48Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T05:27:10.42636Z",
+                       "updatedAt":  "2025-11-09T05:51:10.170981Z",
+                       "startedAt":  "2025-11-09T05:29:00.446842Z",
+                       "finishedAt":  "2025-11-09T05:30:37.853308Z"
+                   },
+        "cursor":  "y8GnzsfvpHdjYjBtMmY4czczZGVsZThn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d482c76mcj7s7380b5cg",
+                       "commit":  {
+                                      "id":  "86041144cf63aae72bfc35f555a638d9b96581e7",
+                                      "message":  "fix(api): import PlanAlimenticio in solicitar_plan_por_plan to prevent NameError",
+                                      "createdAt":  "2025-11-09T05:26:48Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T05:26:53.209172Z",
+                       "updatedAt":  "2025-11-09T05:30:37.848997Z",
+                       "startedAt":  "2025-11-09T05:26:53.172434Z",
+                       "finishedAt":  "2025-11-09T05:28:58.47147Z"
+                   },
+        "cursor":  "y8GnzsfvpHdjNzZtY2o3czczODBiNWNn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d48239hr0fns73fp43n0",
+                       "commit":  {
+                                      "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                      "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                      "createdAt":  "2025-11-09T03:40:31Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T05:07:51.76507Z",
+                       "updatedAt":  "2025-11-09T05:28:58.469667Z",
+                       "startedAt":  "2025-11-09T05:07:51.31648Z",
+                       "finishedAt":  "2025-11-09T05:16:35.357869Z"
+                   },
+        "cursor":  "y8GnzsfvpHczOWhyMGZuczczZnA0M24w"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480rm0m2f8s73deg3qg",
+                       "commit":  {
+                                      "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                      "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                      "createdAt":  "2025-11-09T03:40:31Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T03:43:21.424192Z",
+                       "updatedAt":  "2025-11-09T05:16:35.356508Z",
+                       "startedAt":  "2025-11-09T03:45:27.954463Z",
+                       "finishedAt":  "2025-11-09T03:50:31.508209Z"
+                   },
+        "cursor":  "MQtgpjhTMexybTBtMmY4czczZGVnM3Fn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480qsqg0ims73dv7lbg",
+                       "commit":  {
+                                      "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                      "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                      "createdAt":  "2025-11-09T03:40:31Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T03:41:41.103237Z",
+                       "updatedAt":  "2025-11-09T03:50:31.506829Z",
+                       "startedAt":  "2025-11-09T03:42:42.17552Z",
+                       "finishedAt":  "2025-11-09T03:45:26.043996Z"
+                   },
+        "cursor":  "MQtgpjhTMexxc3FnMGltczczZHY3bGJn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480qcili9vc73c8c68g",
+                       "commit":  {
+                                      "id":  "8f8a574414666375ec4636392c5e82b6df388f5b",
+                                      "message":  "Fix: unindent nested route handlers to top-level to prevent OPTIONS preflight 500 (listar_planes_mis, obtener_rutina_publica)",
+                                      "createdAt":  "2025-11-09T03:40:31Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T03:40:35.335207Z",
+                       "updatedAt":  "2025-11-09T03:45:26.039844Z",
+                       "startedAt":  "2025-11-09T03:40:35.302413Z",
+                       "finishedAt":  "2025-11-09T03:42:40.828453Z"
+                   },
+        "cursor":  "MQtgpjhTMexxY2lsaTl2YzczYzhjNjhn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480oa0m2f8s73defqr0",
+                       "commit":  {
+                                      "id":  "8d791457b37445885880b5709cece235cf05bf9d",
+                                      "message":  "jwt_required: allow OPTIONS (CORS preflight) to avoid blocking preflight requests",
+                                      "createdAt":  "2025-11-09T03:35:35Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T03:36:09.419776Z",
+                       "updatedAt":  "2025-11-09T03:42:40.826105Z",
+                       "startedAt":  "2025-11-09T03:37:37.25412Z",
+                       "finishedAt":  "2025-11-09T03:40:14.383361Z"
+                   },
+        "cursor":  "MQtgpjhTMexvYTBtMmY4czczZGVmcXIw"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480o2emcj7s73804r7g",
+                       "commit":  {
+                                      "id":  "8d791457b37445885880b5709cece235cf05bf9d",
+                                      "message":  "jwt_required: allow OPTIONS (CORS preflight) to avoid blocking preflight requests",
+                                      "createdAt":  "2025-11-09T03:35:35Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T03:35:38.70883Z",
+                       "updatedAt":  "2025-11-09T03:40:14.381742Z",
+                       "startedAt":  "2025-11-09T03:35:38.675032Z",
+                       "finishedAt":  "2025-11-09T03:37:35.751334Z"
+                   },
+        "cursor":  "MQtgpjhTMexvMmVtY2o3czczODA0cjdn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480hq8m2f8s73deffv0",
+                       "commit":  {
+                                      "id":  "435ddfd71c413914c59dfe94120d7a0f5f7365f2",
+                                      "message":  "Revert verbose global errors and hide DB details in prod; keep logging",
+                                      "createdAt":  "2025-11-09T03:22:13Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T03:22:17.950538Z",
+                       "updatedAt":  "2025-11-09T03:37:35.74998Z",
+                       "startedAt":  "2025-11-09T03:22:52.448685Z",
+                       "finishedAt":  "2025-11-09T03:26:47.605722Z"
+                   },
+        "cursor":  "MQtgpjhTMexocThtMmY4czczZGVmZnYw"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480ge8m2f8s73defchg",
+                       "commit":  {
+                                      "id":  "f4e1a6d84055019ba2f3123b21f41d82ceeedd5a",
+                                      "message":  "Temporarily expose exception detail in global error handler for diagnosis",
+                                      "createdAt":  "2025-11-09T03:20:31Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T03:19:22.224351Z",
+                       "updatedAt":  "2025-11-09T03:26:47.604483Z",
+                       "startedAt":  "2025-11-09T03:20:58.03704Z",
+                       "finishedAt":  "2025-11-09T03:22:51.017746Z"
+                   },
+        "cursor":  "MQtgpjhTMexnZThtMmY4czczZGVmY2hn"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480gaqli9vc73c8ats0",
+                       "commit":  {
+                                      "id":  "2f36636ac55d391a415ea844bb22fc8cbbd4f6d0",
+                                      "message":  "Instrumentar crear_plan: logging y manejo temporal de errores; add helper scripts for deploy checks",
+                                      "createdAt":  "2025-11-09T03:18:51Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "new_commit",
+                       "createdAt":  "2025-11-09T03:19:08.241698Z",
+                       "updatedAt":  "2025-11-09T03:22:51.01592Z",
+                       "startedAt":  "2025-11-09T03:19:08.202953Z",
+                       "finishedAt":  "2025-11-09T03:20:56.417125Z"
+                   },
+        "cursor":  "MQtgpjhTMexnYXFsaTl2YzczYzhhdHMw"
+    },
+    {
+        "deploy":  {
+                       "id":  "dep-d480d33ipnbc73d67un0",
+                       "commit":  {
+                                      "id":  "e19b3f308365f53f21ca30f7aee065d9c0d2e8b9",
+                                      "message":  "Add SolicitudPlan model + endpoints; implement solicitar plan and \u0027Mis planes\u0027 UI; sync and local fallback",
+                                      "createdAt":  "2025-11-08T23:57:16Z"
+                                  },
+                       "status":  "deactivated",
+                       "trigger":  "api",
+                       "createdAt":  "2025-11-09T03:12:14.508814Z",
+                       "updatedAt":  "2025-11-09T03:20:56.414867Z",
+                       "startedAt":  "2025-11-09T03:12:14.332643Z",
+                       "finishedAt":  "2025-11-09T03:15:15.80015Z"
+                   },
+        "cursor":  "MQtgpjhTMexkMzNpcG5iYzczZDY3dW4w"
+    }
+]

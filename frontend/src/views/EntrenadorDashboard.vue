@@ -128,15 +128,36 @@
             <div v-for="p in misPlanes" :key="p.id" class="border rounded p-3 bg-gray-50">
               <div class="flex justify-between items-start">
                 <div>
-                  <div class="font-semibold">{{ p.nombre }}</div>
+                  <div v-if="editingPlanId !== p.id" class="font-semibold">{{ p.nombre }}</div>
+                  <div v-else>
+                    <input v-model="planEditForm.nombre" class="border px-2 py-1 w-full" />
+                  </div>
                   <div class="text-sm text-gray-600">{{ formatDate(p.creado_en) }}</div>
                 </div>
                 <div class="text-right text-sm">
-                  <div>{{ p.es_publico ? 'Público' : 'Privado' }}</div>
+                  <div v-if="editingPlanId !== p.id">{{ p.es_publico ? 'Público' : 'Privado' }}</div>
+                  <div v-else><input type="checkbox" v-model="planEditForm.es_publico" /> Público</div>
                 </div>
               </div>
-              <div class="mt-2 text-sm text-gray-700">{{ p.descripcion }}</div>
-              <div class="mt-2 text-xs text-gray-600">{{ p.contenido }}</div>
+              <div class="mt-2 text-sm text-gray-700">
+                <div v-if="editingPlanId !== p.id">{{ p.descripcion }}</div>
+                <div v-else><textarea v-model="planEditForm.descripcion" class="w-full border px-2 py-1"></textarea></div>
+              </div>
+              <div class="mt-2 text-xs text-gray-600">
+                <div v-if="editingPlanId !== p.id">{{ p.contenido }}</div>
+                <div v-else><textarea v-model="planEditForm.contenido" class="w-full border px-2 py-1"></textarea></div>
+              </div>
+              <div class="mt-3 flex justify-end space-x-2">
+                <template v-if="editingPlanId !== p.id">
+                  <button @click="startEditPlan(p)" class="px-2 py-1 bg-yellow-400 text-white rounded">Editar</button>
+                  <button @click="togglePublicPlan(p)" class="px-2 py-1 bg-blue-600 text-white rounded">Toggle Público</button>
+                  <button @click="deletePlan(p.id)" class="px-2 py-1 bg-red-600 text-white rounded">Eliminar</button>
+                </template>
+                <template v-else>
+                  <button @click="saveEditPlan(p.id)" class="px-2 py-1 bg-green-600 text-white rounded">Guardar</button>
+                  <button @click="cancelEditPlan" class="px-2 py-1 bg-gray-300 rounded">Cancelar</button>
+                </template>
+              </div>
             </div>
           </div>
           <div v-else class="mt-2 text-sm text-gray-600">No hay planes aún.</div>
@@ -167,7 +188,13 @@ export default {
       },
       rutinas: []
       ,
-      activePanel: 'rutinas'
+      activePanel: 'rutinas',
+      // plan form state declared here so Vue reactivity works
+      planForm: { nombre: '', descripcion: '', contenido: '', es_publico: false },
+      misPlanes: [],
+      // editing state for plans
+      editingPlanId: null,
+      planEditForm: { nombre: '', descripcion: '', contenido: '', es_publico: false }
     }
   },
   methods: {
@@ -229,6 +256,64 @@ export default {
       } catch (e) {
         console.error('createPlan', e)
         alert('Error creando plan')
+      }
+    },
+
+    // Plan CRUD: delete, edit, save
+    async deletePlan(id) {
+      if (!confirm('¿Eliminar plan?')) return
+      try {
+        const res = await api.del(`/api/planes/${id}`)
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          alert('Error: ' + (err.error || JSON.stringify(err)))
+          return
+        }
+        await this.fetchMisPlanes()
+      } catch (e) {
+        console.error('deletePlan', e)
+        alert('Error eliminando plan')
+      }
+    },
+
+    startEditPlan(p) {
+      this.editingPlanId = p.id
+      this.planEditForm = { nombre: p.nombre || '', descripcion: p.descripcion || '', contenido: p.contenido || '', es_publico: !!p.es_publico }
+    },
+
+    cancelEditPlan() {
+      this.editingPlanId = null
+      this.planEditForm = { nombre: '', descripcion: '', contenido: '', es_publico: false }
+    },
+
+    async saveEditPlan(id) {
+      try {
+        const res = await api.put(`/api/planes/${id}`, this.planEditForm)
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          alert('Error: ' + (err.error || JSON.stringify(err)))
+          return
+        }
+        this.cancelEditPlan()
+        await this.fetchMisPlanes()
+      } catch (e) {
+        console.error('saveEditPlan', e)
+        alert('Error actualizando plan')
+      }
+    },
+
+    async togglePublicPlan(p) {
+      try {
+        const res = await api.put(`/api/planes/${p.id}`, { es_publico: !p.es_publico })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          alert('Error: ' + (err.error || JSON.stringify(err)))
+          return
+        }
+        await this.fetchMisPlanes()
+      } catch (e) {
+        console.error('togglePublicPlan', e)
+        alert('Error actualizando plan')
       }
     },
 

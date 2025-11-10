@@ -1,0 +1,11 @@
+﻿{
+    "id":  "69103609c66a3effd3d54f36",
+    "deploy_id":  "69103609c66a3effd3d54f38",
+    "sha":  null,
+    "done":  false,
+    "error":  null,
+    "created_at":  "2025-11-09T06:34:49.098Z",
+    "deploy_state":  "new",
+    "deploy_pending_review_reason":  "",
+    "strict_contributor_verification_failure":  false
+}

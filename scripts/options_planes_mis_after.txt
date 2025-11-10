@@ -1,0 +1,18 @@
+HTTP/1.1 500 Internal Server Error
+Date: Sun, 09 Nov 2025 03:40:03 GMT
+Content-Type: application/json
+Transfer-Encoding: chunked
+Connection: keep-alive
+CF-RAY: 99ba495a5b08e99e-SCL
+access-control-allow-credentials: true
+access-control-allow-headers: Authorization, Content-Type
+access-control-allow-methods: DELETE, GET, OPTIONS, POST, PUT
+access-control-allow-origin: https://cfmc-entrenaprochile.netlify.app
+rndr-id: 9e6a54c8-dc9e-41b4
+vary: Accept-Encoding
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+Server: cloudflare
+alt-svc: h3=":443"; ma=86400
+
+{"error":"internal server error"}

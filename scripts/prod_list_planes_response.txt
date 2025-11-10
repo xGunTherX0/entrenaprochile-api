@@ -1,0 +1,2 @@
+﻿{"detail":"(psycopg2.OperationalError) connection to server at \"dpg-d3kilqqli9vc73c73o1g-a.oregon-postgres.render.com\" (35.227.164.209), port 5432 failed: SSL connection has been closed unexpectedly\n\n(Background on this error at: https://sqlalche.me/e/20/e3q8)","error":"db error"}
+

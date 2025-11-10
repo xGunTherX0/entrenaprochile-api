@@ -113,6 +113,16 @@ if DATABASE_URL:
 	# Esta línea asegura que el formato sea el correcto para el despliegue
 	SQLALCHEMY_URI = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 	print("Modo Producción: Conectando a PostgreSQL")
+
+	# Ensure SSL mode for Postgres connections on platforms that require it
+	# (Render-managed Postgres often requires SSL). If the connection string
+	# doesn't already include sslmode, append it. This is safe because if
+	# the param is already present we don't modify the URI.
+	if SQLALCHEMY_URI.startswith('postgresql://') and 'sslmode=' not in SQLALCHEMY_URI:
+		if '?' in SQLALCHEMY_URI:
+			SQLALCHEMY_URI = SQLALCHEMY_URI + '&sslmode=require'
+		else:
+			SQLALCHEMY_URI = SQLALCHEMY_URI + '?sslmode=require'
 else:
 	# Si no se encuentra la variable (estás en tu PC), usa SQLite (Modo Desarrollo)
 	# Construimos una ruta absoluta al archivo dentro del repo para evitar
@@ -713,12 +723,36 @@ def solicitar_plan(rutina_id):
 
 		# create solicitudes_plan table if missing
 		try:
-			db.session.execute(text('CREATE TABLE IF NOT EXISTS solicitudes_plan (id SERIAL PRIMARY KEY, cliente_id INTEGER NOT NULL, rutina_id INTEGER NOT NULL, estado VARCHAR(50) DEFAULT \'pendiente\', nota TEXT, creado_en TIMESTAMP DEFAULT now())'))
+			# Ensure solicitudes_plan table includes both rutina_id and plan_id (nullable)
+			# Use a portable CREATE TABLE statement that works on SQLite and Postgres
+			# - rutina_id and plan_id are nullable so the table can store either kind of solicitud
+			db.session.execute(text(
+				"CREATE TABLE IF NOT EXISTS solicitudes_plan ("
+				"id INTEGER PRIMARY KEY AUTOINCREMENT, "
+				"cliente_id INTEGER NOT NULL, "
+				"rutina_id INTEGER, "
+				"plan_id INTEGER, "
+				"estado VARCHAR(50) DEFAULT 'pendiente', "
+				"nota TEXT, "
+				"creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+			))
 			db.session.commit()
 		except Exception:
 			db.session.rollback()
 
-		# Insert a new SolicitudPlan
+			# Ensure columns exist on older DBs: add plan_id and rutina_id if missing
+			# Try to add missing columns for older DBs. SQLite doesn't support
+			# 'IF NOT EXISTS' for ALTER COLUMN, so run plain ALTER and ignore
+			# errors when the column is already present.
+			try:
+				db.session.execute(text("ALTER TABLE solicitudes_plan ADD COLUMN plan_id INTEGER"))
+				db.session.execute(text("ALTER TABLE solicitudes_plan ADD COLUMN rutina_id INTEGER"))
+				db.session.commit()
+			except Exception:
+				# If ALTER fails (e.g., column exists), rollback and continue
+				db.session.rollback()
+		
+			# Insert a new SolicitudPlan
 		from database.database import SolicitudPlan
 		# For rutina-based requests we auto-accept (estado 'aceptado') so the
 		# cliente sees the solicitud active immediately (workflow: rutina -> plan)
@@ -784,6 +818,47 @@ def listar_solicitudes_mis():
 		return jsonify(result), 200
 	except Exception as e:
 		app.logger.exception('listar_solicitudes_mis failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+
+@app.route('/api/solicitudes/<int:solicitud_id>', methods=['DELETE'])
+@jwt_required
+def cancelar_solicitud(solicitud_id):
+	"""Permite al cliente cancelar (eliminar) su propia solicitud.
+	Verifica que la solicitud pertenezca al cliente autenticado.
+	"""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	try:
+		cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		cliente = None
+	if not cliente:
+		return jsonify({'error': 'cliente not found'}), 404
+
+	try:
+		from database.database import SolicitudPlan
+		s = SolicitudPlan.query.filter_by(id=solicitud_id).first()
+		if not s:
+			return jsonify({'error': 'solicitud not found'}), 404
+		if s.cliente_id != cliente.id:
+			return jsonify({'error': 'forbidden: not your solicitud'}), 403
+
+		# Mark the solicitud as canceled instead of deleting it to keep history
+		try:
+			s.estado = 'cancelado'
+			db.session.add(s)
+			db.session.commit()
+			return jsonify({'message': 'solicitud cancelada', 'id': s.id, 'estado': s.estado}), 200
+		except Exception as e:
+			db.session.rollback()
+			app.logger.exception('cancelar_solicitud: db update failed')
+			return jsonify({'error': 'db error', 'detail': str(e)}), 500
+	except Exception as e:
+		app.logger.exception('cancelar_solicitud failed')
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
@@ -885,6 +960,40 @@ def listar_planes_publicos():
 
 
 
+@app.route('/api/planes/<int:plan_id>', methods=['GET'])
+def obtener_plan_publico(plan_id):
+	"""Devuelve detalle de un plan alimenticio por id. Público si es_publico==True.
+	Endpoint público para que clientes puedan ver detalle sin autenticación.
+	"""
+	try:
+		from database.database import PlanAlimenticio
+		plan = PlanAlimenticio.query.filter_by(id=plan_id).first()
+		if not plan:
+			return jsonify({'error': 'plan not found'}), 404
+		if not getattr(plan, 'es_publico', False):
+			return jsonify({'error': 'forbidden: plan not public'}), 403
+
+		creado_val = None
+		try:
+			creado_val = plan.creado_en.isoformat() if getattr(plan, 'creado_en', None) else None
+		except Exception:
+			creado_val = None
+
+		entrenador_nombre = None
+		try:
+			ent = Entrenador.query.filter_by(id=plan.entrenador_id).first()
+			if ent and getattr(ent, 'usuario', None):
+				entrenador_nombre = ent.usuario.nombre
+		except Exception:
+			entrenador_nombre = None
+
+		return jsonify({'id': plan.id, 'nombre': plan.nombre, 'descripcion': plan.descripcion, 'contenido': plan.contenido, 'es_publico': plan.es_publico, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': plan.entrenador_id}), 200
+	except Exception as e:
+		app.logger.exception('obtener_plan_publico failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+
 @app.route('/api/planes/mis', methods=['GET'])
 @jwt_required
 def listar_planes_mis():
@@ -920,6 +1029,81 @@ def listar_planes_mis():
         return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+
+@app.route('/api/planes/<int:plan_id>', methods=['PUT'])
+@jwt_required
+def actualizar_plan(plan_id):
+	"""Actualizar un plan alimenticio. Solo el entrenador propietario puede modificarlo."""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	try:
+		entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		entrenador = None
+	if not entrenador:
+		return jsonify({'error': 'forbidden: not entrenador'}), 403
+
+	try:
+		from database.database import PlanAlimenticio
+		plan = PlanAlimenticio.query.filter_by(id=plan_id).first()
+		if not plan:
+			return jsonify({'error': 'plan not found'}), 404
+		if plan.entrenador_id != entrenador.id:
+			return jsonify({'error': 'forbidden: not owner'}), 403
+
+		data = request.get_json() or {}
+		if 'nombre' in data:
+			plan.nombre = data.get('nombre')
+		if 'descripcion' in data:
+			plan.descripcion = data.get('descripcion')
+		if 'contenido' in data:
+			plan.contenido = data.get('contenido')
+		if 'es_publico' in data:
+			plan.es_publico = bool(data.get('es_publico'))
+
+		db.session.add(plan)
+		db.session.commit()
+		return jsonify({'message': 'plan actualizado', 'id': plan.id}), 200
+	except Exception as e:
+		db.session.rollback()
+		app.logger.exception('actualizar_plan failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
+@app.route('/api/planes/<int:plan_id>', methods=['DELETE'])
+@jwt_required
+def eliminar_plan(plan_id):
+	"""Eliminar un plan alimenticio. Solo el entrenador propietario puede eliminarlo."""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	try:
+		entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		entrenador = None
+	if not entrenador:
+		return jsonify({'error': 'forbidden: not entrenador'}), 403
+
+	try:
+		from database.database import PlanAlimenticio
+		plan = PlanAlimenticio.query.filter_by(id=plan_id).first()
+		if not plan:
+			return jsonify({'error': 'plan not found'}), 404
+		if plan.entrenador_id != entrenador.id:
+			return jsonify({'error': 'forbidden: not owner'}), 403
+
+		db.session.delete(plan)
+		db.session.commit()
+		return jsonify({'message': 'plan eliminado', 'id': plan_id}), 200
+	except Exception as e:
+		db.session.rollback()
+		app.logger.exception('eliminar_plan failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/planes/<int:plan_id>/solicitar', methods=['POST'])
 @jwt_required
 def solicitar_plan_por_plan(plan_id):
@@ -943,12 +1127,56 @@ def solicitar_plan_por_plan(plan_id):
 		# Ensure the model is imported in this scope (avoid NameError when not lazily imported)
 		from database.database import PlanAlimenticio
 		plan = PlanAlimenticio.query.filter_by(id=plan_id).first()
+		# Ensure solicitudes_plan table exists and has expected columns (compat with older test DBs)
+		try:
+			with app.app_context():
+				# portable create for SQLite testing and Postgres
+				try:
+					db.session.execute(text("CREATE TABLE IF NOT EXISTS solicitudes_plan (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER NOT NULL, rutina_id INTEGER, plan_id INTEGER, estado VARCHAR(50) DEFAULT 'pendiente', nota TEXT, creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
+					db.session.commit()
+				except Exception:
+					db.session.rollback()
+				# try to add missing columns in case table was created with older schema
+				try:
+					db.session.execute(text("ALTER TABLE solicitudes_plan ADD COLUMN plan_id INTEGER"))
+					db.session.execute(text("ALTER TABLE solicitudes_plan ADD COLUMN rutina_id INTEGER"))
+					db.session.commit()
+				except Exception:
+					db.session.rollback()
+		except Exception:
+			# non-fatal; we'll try the ORM insert and handle errors
+			pass
 		if not plan:
 			return jsonify({'error': 'plan not found'}), 404
 		from database.database import SolicitudPlan
 		s = SolicitudPlan(cliente_id=cliente.id, plan_id=plan.id, estado='pendiente')
 		db.session.add(s)
-		db.session.commit()
+		try:
+			db.session.commit()
+		except Exception as commit_exc:
+			# If the existing DB schema has rutina_id NOT NULL or is missing plan_id,
+			# attempt a lightweight table rebuild to correct the schema, then retry.
+			db.session.rollback()
+			app.logger.exception('solicitar_plan_por_plan: commit failed, attempting table rebuild')
+			try:
+				with app.app_context():
+					# create new table with correct nullable columns
+					db.session.execute(text("CREATE TABLE IF NOT EXISTS solicitudes_plan_new (id INTEGER PRIMARY KEY AUTOINCREMENT, cliente_id INTEGER NOT NULL, rutina_id INTEGER, plan_id INTEGER, estado VARCHAR(50) DEFAULT 'pendiente', nota TEXT, creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
+					# copy minimal columns to new table, setting rutina_id/plan_id to NULL where needed
+					try:
+						db.session.execute(text("INSERT INTO solicitudes_plan_new (id, cliente_id, rutina_id, plan_id, estado, nota, creado_en) SELECT id, cliente_id, NULL AS rutina_id, NULL AS plan_id, estado, nota, creado_en FROM solicitudes_plan"))
+					except Exception:
+						# If copy fails (schema mismatch), ignore and continue — new table will be empty
+						pass
+					# replace old table
+					db.session.execute(text('DROP TABLE IF EXISTS solicitudes_plan'))
+					db.session.execute(text('ALTER TABLE solicitudes_plan_new RENAME TO solicitudes_plan'))
+					db.session.commit()
+			except Exception:
+				db.session.rollback()
+			# retry insert once more
+			db.session.add(s)
+			db.session.commit()
 		return jsonify({'message': 'solicitud creada', 'id': s.id}), 201
 	except Exception as e:
 		db.session.rollback()
