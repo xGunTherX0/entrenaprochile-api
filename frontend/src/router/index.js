@@ -26,6 +26,7 @@ const routes = [
     children: [
       { path: 'mediciones', name: 'ClienteMediciones', component: () => import('../views/ClienteMediciones.vue') },
       { path: 'explorar', name: 'ClienteExplorar', component: () => import('../views/ExplorarRutinas.vue') },
+  { path: 'explorar-planes', name: 'ClienteExplorarPlanes', component: () => import('../views/ExplorarPlanes.vue') },
       { path: 'misrutinas', name: 'ClienteMisRutinas', component: () => import('../views/MisRutinas.vue') },
       { path: 'rutina/:id', name: 'ClienteRutina', component: () => import('../views/ClienteRutina.vue'), props: true },
       { path: 'plan/:id', name: 'ClientePlan', component: () => import('../views/ClientePlan.vue'), props: true },

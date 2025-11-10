@@ -3,7 +3,8 @@
     <nav class="w-64 bg-white border-r p-4">
       <h2 class="text-xl font-bold mb-4">Cliente</h2>
       <ul>
-        <li class="mb-2"><router-link to="/cliente/explorar" class="text-left w-full">Explorar Rutinas</router-link></li>
+  <li class="mb-2"><router-link to="/cliente/explorar" class="text-left w-full">Explorar Rutinas</router-link></li>
+  <li class="mb-2"><router-link to="/cliente/explorar-planes" class="text-left w-full">Explorar Planes Nutricionales</router-link></li>
         <li class="mb-2"><router-link to="/cliente/misrutinas" class="text-left w-full">Mis Rutinas</router-link></li>
         <li class="mb-2"><router-link to="/cliente/planes" class="text-left w-full">Mis Planes Nutricionales</router-link></li>
         <li class="mb-2"><router-link to="/cliente/mediciones" class="text-left w-full">Registro de Mediciones</router-link></li>
