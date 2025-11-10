@@ -66,7 +66,7 @@
               <div v-for="r in paginatedRutinas" :key="r.id" class="bg-white border rounded p-4 shadow hover:shadow-md">
                 <div class="flex justify-between items-start">
                   <div>
-                    <h3 class="font-semibold text-lg cursor-pointer" @click="openRutinaDetail(r.id)">{{ r.nombre }}</h3>
+                    <h3 class="font-semibold text-lg cursor-pointer" @click="openRutinaDetail(r.id)">{{ r.nombre }} <span v-if="localSavedRutinas.includes(r.id)" class="ml-2 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded">Guardado</span></h3>
                     <div class="text-sm text-gray-600">{{ r.nivel }} • {{ r.entrenador_nombre || '—' }}</div>
                   </div>
                   <div class="text-xs text-gray-500">{{ r.creado_en ? new Date(r.creado_en).toLocaleDateString() : '' }}</div>
@@ -96,9 +96,9 @@
           <div v-else>
             <div v-if="misRutinas.length===0" class="text-sm text-gray-600">No tienes rutinas guardadas.</div>
             <ul class="mt-2 space-y-2">
-              <li v-for="r in misRutinas" :key="r.id" class="p-3 border rounded bg-white flex justify-between items-center">
+                <li v-for="r in misRutinas" :key="r.id" class="p-3 border rounded bg-white flex justify-between items-center">
                 <div>
-                  <div class="font-semibold">{{ r.nombre }}</div>
+                    <div class="font-semibold">{{ r.nombre }} <span v-if="(r._localOnly) || (localSavedRutinas && localSavedRutinas.includes(Number(r.id)))" class="ml-2 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded">Guardada localmente</span></div>
                   <div class="text-sm text-gray-600">{{ r.descripcion }}</div>
                 </div>
                 <div class="space-x-2">
@@ -461,16 +461,18 @@ export default {
                 const rr = await api.get(`/api/rutinas/${rid}`, { skipAuth: true })
                 if (rr && rr.ok) {
                   const detail = await rr.json()
+                  // mark as local-only because it wasn't returned by /api/rutinas/mis
+                  detail._localOnly = true
                   this.misRutinas.push(detail)
                   existingIds.add(rid)
                 } else {
                   // Create a minimal placeholder so the user sees the saved item
-                  this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '' })
+                  this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '', _localOnly: true })
                   existingIds.add(rid)
                 }
               } catch (err) {
                 console.error('failed to fetch rutina detail for', rid, err)
-                this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '' })
+                this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '', _localOnly: true })
                 existingIds.add(rid)
               }
             }

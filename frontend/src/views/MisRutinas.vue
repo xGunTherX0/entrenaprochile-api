@@ -13,7 +13,7 @@
           <ul class="mt-2 space-y-2">
             <li v-for="r in filteredRutinas" :key="r.id" class="p-3 border rounded bg-white flex justify-between items-center">
               <div>
-                <div class="font-semibold">{{ r.nombre }}</div>
+                <div class="font-semibold">{{ r.nombre }} <span v-if="(r._localOnly) || (localSavedRutinas && localSavedRutinas.includes(Number(r.id)))" class="ml-2 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded">Guardada localmente</span></div>
                 <div class="text-sm text-gray-600">{{ r.descripcion }}</div>
               </div>
               <div class="space-x-2">
@@ -61,7 +61,7 @@ export default {
         const existingIds = new Set((this.misRutinas || []).map(r => Number(r.id)))
         for (const id of this.localSavedRutinas) {
           if (!existingIds.has(Number(id))) {
-            this.misRutinas.push({ id: Number(id), nombre: 'Guardado localmente', descripcion: '', nivel: '', es_publica: false })
+            this.misRutinas.push({ id: Number(id), nombre: 'Guardado localmente', descripcion: '', nivel: '', es_publica: false, _localOnly: true })
           }
         }
       } catch (e) {
