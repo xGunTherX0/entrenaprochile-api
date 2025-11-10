@@ -431,7 +431,8 @@ export default {
       this.misRutinas = []
       this.misSolicitudes = []
       try {
-        // saved rutinas (requires auth)
+        // saved rutinas (requires auth). If server returns none, merge with any
+        // locally-saved rutina ids so the user still sees their saved items.
         try {
           const res = await api.get('/api/rutinas/mis')
           if (res && res.ok) {
@@ -439,6 +440,41 @@ export default {
           }
         } catch (e) {
           console.error('fetch mis rutinas failed', e)
+        }
+
+        // Merge local saved rutinas (localStorage) as a fallback so users who
+        // saved rutinas while unauthenticated or when the server failed still
+        // see them in "Mis Rutinas".
+        try {
+          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
+          this.localSavedRutinas = Array.isArray(saved) ? saved : []
+        } catch (e) {
+          this.localSavedRutinas = []
+        }
+
+        if ((this.localSavedRutinas || []).length > 0) {
+          const existingIds = new Set((this.misRutinas || []).map(r => r.id))
+          for (const rid of this.localSavedRutinas) {
+            if (!existingIds.has(rid)) {
+              try {
+                // Attempt to fetch rutina detail (public fallback)
+                const rr = await api.get(`/api/rutinas/${rid}`, { skipAuth: true })
+                if (rr && rr.ok) {
+                  const detail = await rr.json()
+                  this.misRutinas.push(detail)
+                  existingIds.add(rid)
+                } else {
+                  // Create a minimal placeholder so the user sees the saved item
+                  this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '' })
+                  existingIds.add(rid)
+                }
+              } catch (err) {
+                console.error('failed to fetch rutina detail for', rid, err)
+                this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '' })
+                existingIds.add(rid)
+              }
+            }
+          }
         }
 
         // solicitudes

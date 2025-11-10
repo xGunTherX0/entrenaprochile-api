@@ -47,7 +47,7 @@ const routes = [
   {
     path: '/cliente/explorar',
     name: 'ClienteExplorar',
-    component: ClienteDashboard
+    component: () => import('../views/ExplorarRutinas.vue')
   },
   {
     path: '/cliente/misrutinas',

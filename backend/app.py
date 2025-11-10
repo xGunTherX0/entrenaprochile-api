@@ -618,6 +618,42 @@ def seguir_rutina(rutina_id):
 		return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
+@app.route('/api/rutinas/<int:rutina_id>/seguir', methods=['DELETE'])
+@jwt_required
+def dejar_de_seguir_rutina(rutina_id):
+	"""Elimina la relación cliente_rutina para el cliente autenticado.
+	Si la relación no existe, devuelve 200 (idempotente).
+	"""
+	token_user_id = request.jwt_payload.get('user_id')
+	if not token_user_id:
+		return jsonify({'error': 'authentication required'}), 401
+
+	try:
+		cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+	except Exception:
+		cliente = None
+
+	if not cliente:
+		return jsonify({'error': 'cliente not found'}), 404
+
+	try:
+		# Attempt to delete the row from cliente_rutina; be lenient if table missing
+		try:
+			delete_sql = text('DELETE FROM cliente_rutina WHERE cliente_id = :cid AND rutina_id = :rid')
+			db.session.execute(delete_sql, {'cid': cliente.id, 'rid': rutina_id})
+			db.session.commit()
+		except Exception:
+			db.session.rollback()
+			# If the table doesn't exist or deletion failed, return success (idempotent)
+			return jsonify({'message': 'no-op'}), 200
+
+		return jsonify({'message': 'rutina eliminada de guardadas'}), 200
+	except Exception as e:
+		db.session.rollback()
+		app.logger.exception('dejar_de_seguir_rutina failed')
+		return jsonify({'error': 'db error', 'detail': str(e)}), 500
+
+
 @app.route('/api/rutinas/mis', methods=['GET'])
 @jwt_required
 def listar_mis_rutinas():
