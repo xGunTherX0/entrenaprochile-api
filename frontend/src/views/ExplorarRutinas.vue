@@ -72,7 +72,8 @@ export default {
         const id = r.entrenador_id || ('_' + (r.entrenador_nombre || ''))
         if (!map[id]) map[id] = { entrenador_id: r.entrenador_id, entrenador_nombre: r.entrenador_nombre }
       })
-      return Object.values(map)
+      // Avoid relying on Object.values (compatibility); use keys->map
+      return Object.keys(map).map(k => map[k])
     },
     filteredRutinas() {
       let list = this.explorarRutinas || []
