@@ -11,6 +11,11 @@ class Usuario(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     nombre = db.Column(db.String(120), nullable=False)
     hashed_password = db.Column(db.String(255), nullable=False)
+    activo = db.Column(db.Boolean, default=True)
+    # Número de intentos fallidos de login consecutivos
+    failed_attempts = db.Column(db.Integer, default=0)
+    # Si está bloqueado temporalmente, datetime hasta el que permanece bloqueado
+    locked_until = db.Column(db.DateTime, nullable=True)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     # relaciones
@@ -44,6 +49,10 @@ class Entrenador(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     speciality = db.Column(db.String(200))
+    bio = db.Column(db.Text)
+    telefono = db.Column(db.String(50))
+    instagram_url = db.Column(db.String(255))
+    youtube_url = db.Column(db.String(255))
 
     usuario = db.relationship('Usuario', back_populates='entrenador')
     rutinas = db.relationship('Rutina', backref='entrenador', lazy=True)
@@ -58,6 +67,17 @@ class Rutina(db.Model):
     entrenador_id = db.Column(db.Integer, db.ForeignKey('entrenadores.id'), nullable=False)
     nombre = db.Column(db.String(200), nullable=False)
     descripcion = db.Column(db.Text)
+    # Nueva columna: sección de la descripción seleccionada por el entrenador
+    seccion_descripcion = db.Column(db.String(200))
+    # Campos separados para cada sección de la descripción (más flexibles que un select)
+    objetivo_principal = db.Column(db.Text)
+    enfoque_rutina = db.Column(db.Text)
+    cualidades_clave = db.Column(db.Text)
+    duracion_frecuencia = db.Column(db.Text)
+    material_requerido = db.Column(db.Text)
+    instrucciones_estructurales = db.Column(db.Text)
+    # URL opcional asociada a la rutina (por ejemplo página externa, video, recurso)
+    link_url = db.Column(db.String(512))
     nivel = db.Column(db.String(50))
     es_publica = db.Column(db.Boolean, default=False)
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
@@ -83,6 +103,19 @@ class PlanAlimenticio(db.Model):
 
     def __repr__(self):
         return f'<Plan {self.nombre}>'
+
+
+class ContentReview(db.Model):
+    __tablename__ = 'content_review'
+    id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(20))  # 'rutina' | 'plan'
+    content_id = db.Column(db.Integer, nullable=False)
+    estado = db.Column(db.String(50), default='pendiente')
+    creado_por = db.Column(db.Integer, nullable=True)  # usuario_id who created the content
+    creado_en = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<ContentReview {self.tipo}:{self.content_id} {self.estado}>'
 
 
 class Ejercicio(db.Model):
@@ -130,3 +163,13 @@ class SolicitudPlan(db.Model):
     cliente = db.relationship('Cliente', backref='solicitudes')
     rutina = db.relationship('Rutina', backref='solicitudes')
     plan = db.relationship('PlanAlimenticio', backref='solicitudes')
+
+
+class RevokedToken(db.Model):
+    __tablename__ = 'revoked_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(128), unique=True, nullable=False)
+    revoked_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<RevokedToken {self.jti}>'

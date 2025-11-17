@@ -1,0 +1,87 @@
+----
+TIME: 2025-11-13T06:00:29.086543
+PAYLOAD: {'nombre': 'dasdazxczczxczx', 'descripcion': 'sdasdasdasdczxczxcz', 'objetivo_principal': 'asdasdasxczxczc', 'enfoque_rutina': 'dasdasdzxczxc', 'cualidades_clave': 'asdazxczxczxczczxc', 'duracion_frecuencia': 'xczczxczxczxczxc', 'material_requerido': 'zxczxcczx', 'instrucciones_estructurales': 'czxzxczxczczxcz', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:05:46.026733
+PAYLOAD: {'nombre': 'afsfanbvnvnbnbnbv', 'descripcion': 'nbnnnb', 'objetivo_principal': 'vnnbn', 'enfoque_rutina': 'nbbbvvb', 'cualidades_clave': 'vbbbnbnvb', 'duracion_frecuencia': 'vvbnvbnnbnbnb', 'material_requerido': 'nbnv', 'instrucciones_estructurales': 'vnvvnnbvb', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:05:54.598714
+PAYLOAD: {'nombre': 'afsfanbvnvnbnbnbv', 'descripcion': 'nbnnnb', 'objetivo_principal': 'vnnbn', 'enfoque_rutina': 'nbbbvvb', 'cualidades_clave': 'vbbbnbnvb', 'duracion_frecuencia': 'vvbnvbnnbnbnb', 'material_requerido': 'nbnv', 'instrucciones_estructurales': 'vnvvnnbvb', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:09:44.905937
+PAYLOAD: {'nombre': 'afsfanbvnvnbnbnbv', 'descripcion': 'nbnnnb', 'objetivo_principal': 'vnnbn', 'enfoque_rutina': 'nbbbvvb', 'cualidades_clave': 'vbbbnbnvb', 'duracion_frecuencia': 'vvbnvbnnbnbnb', 'material_requerido': 'nbnv', 'instrucciones_estructurales': 'vnvvnnbvb', 'nivel': 'Intermedio', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:16:08.746734
+PAYLOAD: {'nombre': 'asd', 'descripcion': 'sad', 'objetivo_principal': 'ads', 'enfoque_rutina': 'das', 'cualidades_clave': 'ads', 'duracion_frecuencia': 'sad', 'material_requerido': 'das', 'instrucciones_estructurales': 'sda', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:16:20.503029
+PAYLOAD: {'nombre': 'asd', 'descripcion': 'sad', 'objetivo_principal': 'ads', 'enfoque_rutina': 'das', 'cualidades_clave': 'ads', 'duracion_frecuencia': 'sad', 'material_requerido': 'das', 'instrucciones_estructurales': 'sda', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:16:40.483074
+PAYLOAD: {'nombre': 'asd', 'descripcion': 'sad', 'objetivo_principal': 'ads', 'enfoque_rutina': 'das', 'cualidades_clave': 'ads', 'duracion_frecuencia': 'sad', 'material_requerido': 'das', 'instrucciones_estructurales': 'sda', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:20:18.649477
+PAYLOAD: {'nombre': 'test from assistant', 'descripcion': 'desc', 'objetivo_principal': 'obj', 'enfoque_rutina': 'enc', 'cualidades_clave': 'cual', 'duracion_frecuencia': 'dur', 'material_requerido': 'mat', 'instrucciones_estructurales': 'inst', 'nivel': 'Básico', 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:20:26.092141
+PAYLOAD: {'nombre': 'test from assistant', 'descripcion': 'desc', 'objetivo_principal': 'obj', 'enfoque_rutina': 'enc', 'cualidades_clave': 'cual', 'duracion_frecuencia': 'dur', 'material_requerido': 'mat', 'instrucciones_estructurales': 'inst', 'nivel': 'Básico', 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:20:59.746424
+PAYLOAD: {'nombre': 'test from assistant', 'descripcion': 'desc', 'objetivo_principal': 'obj', 'enfoque_rutina': 'enc', 'cualidades_clave': 'cual', 'duracion_frecuencia': 'dur', 'material_requerido': 'mat', 'instrucciones_estructurales': 'inst', 'nivel': 'Básico', 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:23:00.164572
+PAYLOAD: {'nombre': 'asd', 'descripcion': 'dsa', 'objetivo_principal': 'asd', 'enfoque_rutina': 'ads', 'cualidades_clave': 'asd', 'duracion_frecuencia': 'ads', 'material_requerido': 'asd', 'instrucciones_estructurales': 'asd', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T06:24:40.832406
+PAYLOAD: {'nombre': 'zczxc', 'descripcion': 'zxczcz', 'objetivo_principal': 'zxcz', 'enfoque_rutina': 'xczxc', 'cualidades_clave': 'zxczx', 'duracion_frecuencia': 'czxc', 'material_requerido': 'zxc', 'instrucciones_estructurales': 'czxczx', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T08:11:35.980426
+PAYLOAD: {'nombre': 'adsda', 'descripcion': 'sdasdasd', 'objetivo_principal': 'asdasda', 'enfoque_rutina': 'sdasdas', 'cualidades_clave': 'dasda', 'duracion_frecuencia': 'dasdasd', 'material_requerido': 'asdasd', 'instrucciones_estructurales': 'asdasdasdd', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '9'}
+----
+TIME: 2025-11-13T08:48:10.740759
+PAYLOAD: {'nombre': 'qe', 'descripcion': 'qe', 'objetivo_principal': 'qe', 'enfoque_rutina': 'qe', 'cualidades_clave': 'qe', 'duracion_frecuencia': 'qe', 'material_requerido': 'qe', 'instrucciones_estructurales': 'qe', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T08:58:28.912300
+PAYLOAD: {'nombre': 'rutina', 'descripcion': 'eqweqweqwe', 'objetivo_principal': 'qweqwe', 'enfoque_rutina': 'qweqweqw', 'cualidades_clave': 'eqweqweqweqw', 'duracion_frecuencia': 'eqweq', 'material_requerido': 'weqweqwewqe', 'instrucciones_estructurales': 'qweqweqweqweqwe', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-13T20:35:32.669025
+PAYLOAD: {'nombre': 'weqweqweq', 'descripcion': 'weqweqweqw', 'objetivo_principal': 'eqweqwe', 'enfoque_rutina': 'wqeqweq', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '9'}
+----
+TIME: 2025-11-13T20:36:32.058965
+PAYLOAD: {'nombre': 'asdasd', 'descripcion': 'asdasdas', 'objetivo_principal': 'dasd', 'enfoque_rutina': 'asdsds', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '1'}
+----
+TIME: 2025-11-13T20:37:12.858224
+PAYLOAD: {'nombre': 'qq', 'descripcion': 'qqqq', 'objetivo_principal': 'qqq', 'enfoque_rutina': 'qqqq', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '1'}
+----
+TIME: 2025-11-14T00:40:57.967625
+PAYLOAD: {'nombre': 'wqw', 'descripcion': 'qqw', 'objetivo_principal': 'qw', 'enfoque_rutina': 'qwq', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '9'}
+----
+TIME: 2025-11-16T18:58:43.637742
+PAYLOAD: {'nombre': 'caasacs', 'descripcion': 'casascacs', 'objetivo_principal': 'acssaccas', 'enfoque_rutina': 'casacsacsasc', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '9'}
+----
+TIME: 2025-11-16T19:01:14.486694
+PAYLOAD: {'nombre': 'erwerwerw', 'descripcion': 'erwerwerwerw', 'objetivo_principal': 'erwerwer', 'enfoque_rutina': 'werwerwr', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-16T23:24:24.854154
+PAYLOAD: {'nombre': 'asdasd', 'descripcion': 'asdasdasdasd', 'objetivo_principal': 'asdasdasda', 'enfoque_rutina': 'sdasdasd', 'nivel': 'Básico', 'es_publica': False, 'entrenador_id': '7'}
+----
+TIME: 2025-11-17T02:14:02.421362
+PAYLOAD: {'nombre': 'adsds', 'descripcion': 'dasdasd', 'objetivo_principal': 'asdasd', 'enfoque_rutina': 'asdasd', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.instagram.com/p/DNktHe1TOW2/', 'entrenador_id': '7'}
+----
+TIME: 2025-11-17T02:26:02.182261
+PAYLOAD: {'nombre': 'asadasdas', 'descripcion': 'dasdas', 'objetivo_principal': 'dasdas', 'enfoque_rutina': 'dsadasda', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.instagram.com/p/DNktHe1TOW2/', 'entrenador_id': '7'}
+----
+TIME: 2025-11-17T02:34:38.902215
+PAYLOAD: {'nombre': 'asdasad', 'descripcion': 'sdasdas', 'objetivo_principal': 'dasdasdasd', 'enfoque_rutina': 'asdasdadas', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.instagram.com/p/DNktHe1TOW2/', 'entrenador_id': '7'}
+----
+TIME: 2025-11-17T02:39:33.183619
+PAYLOAD: {'nombre': 'dasd', 'descripcion': 'adsdasd', 'objetivo_principal': 'asdasda', 'enfoque_rutina': 'sdasd', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.instagram.com/p/DNktHe1TOW2/', 'entrenador_id': '7'}
+----
+TIME: 2025-11-17T02:52:59.096520
+PAYLOAD: {'nombre': 'asdasd', 'descripcion': 'sdas', 'objetivo_principal': 'dasd', 'enfoque_rutina': 'asda', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.instagram.com/p/DNktHe1TOW2/', 'entrenador_id': '7'}
+----
+TIME: 2025-11-17T03:07:11.242487
+PAYLOAD: {'nombre': 'asdasd', 'descripcion': 'asdasda', 'objetivo_principal': 'sdasdasdasdas', 'enfoque_rutina': 'asdada', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.instagram.com/p/DRAtroCkkuD/', 'entrenador_id': '9'}
+----
+TIME: 2025-11-17T03:29:59.245136
+PAYLOAD: {'nombre': 'dasdas', 'descripcion': 'dasdasda', 'objetivo_principal': 'sdasdas', 'enfoque_rutina': 'dasd', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.youtube.com/watch?v=HohsJf51LZE&list=RDHohsJf51LZE&start_radio=1&t=596s', 'entrenador_id': '7'}

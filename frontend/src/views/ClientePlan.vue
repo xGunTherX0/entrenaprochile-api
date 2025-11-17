@@ -15,10 +15,7 @@
         <div v-if="plan && !planForbidden" v-html="plan.contenido"></div>
         <div v-else class="text-sm text-gray-600">Contenido oculto</div>
       </div>
-      <div class="mt-4" v-if="solicitudId">
-        <button @click="cancelSolicitud" class="px-3 py-2 bg-red-600 text-white rounded mr-2">Cancelar plan</button>
-        <button @click="$router.push('/cliente/planes')" class="px-3 py-2 bg-gray-200 rounded">Volver a solicitudes</button>
-      </div>
+      <!-- 'Volver a solicitudes' button removed; top 'Volver' button remains -->
     </div>
   </div>
 </template>
@@ -37,7 +34,7 @@ export default {
       this.error = null
       this.planForbidden = false
       try {
-        const res = await api.get(`/api/planes/${id}`, { skipAuth: true })
+        const res = await api.get(`/api/planes/${id}`)
         const body = await res.json()
         if (!res.ok) {
           if (res.status === 403) {

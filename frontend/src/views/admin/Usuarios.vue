@@ -19,11 +19,17 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="u in users" :key="u.id">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.email }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><router-link :to="`/admin/usuarios/${u.id}`" class="text-blue-600 hover:underline">{{ u.email }}</router-link></td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.nombre }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.role }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.role }} <span v-if="u.activo===false" class="text-sm text-red-600">(desactivado)</span></td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               <button v-if="u.role !== 'entrenador' && u.role !== 'admin'" @click="promote(u.id)" class="text-indigo-600 hover:text-indigo-900 mr-3">Promover</button>
+              <button v-if="u.role === 'entrenador'" @click="demoteToClient(u.id)" class="text-purple-600 hover:text-purple-900 mr-3">Degradar</button>
+              <button @click="changeRole(u.id)" class="text-gray-600 hover:text-gray-900 mr-3">Cambiar rol</button>
+              <!-- Nuevo botón: desactivar cuenta (soft) -->
+              <button v-if="u.activo !== false" @click="deactivate(u.id)" class="text-yellow-600 hover:text-yellow-900 mr-3">Desactivar</button>
+              <!-- Botón reactivar para usuarios desactivados -->
+              <button v-else @click="reactivate(u.id)" class="text-green-700 hover:text-green-900 mr-3">Reactivar</button>
               <button @click="remove(u.id)" class="text-red-600 hover:text-red-900">Borrar</button>
             </td>
           </tr>
@@ -103,12 +109,87 @@ export default {
     },
     async remove(id) {
       this.error = null
-      if (!confirm('¿Eliminar usuario? Esta acción es irreversible.')) return
+      // Ask admin whether to soft-disable (default) or hard-delete
+      const soft = confirm('¿Deseas DESACTIVAR la cuenta en vez de eliminarla permanentemente?\nAceptar = Desactivar (recomendado), Cancelar = Eliminar permanentemente')
+      if (!confirm('¿Confirmar la acción seleccionada?')) return
+      const mode = soft ? 'soft' : 'hard'
       try {
-  const res = await api.del(`/api/admin/usuarios/${id}`)
+  const res = await api.del(`/api/admin/usuarios/${id}?mode=${mode}`)
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
           this.error = j.error || 'Error borrando usuario'
+          return
+        }
+        await this.loadUsers()
+        this.$emit('refresh-metrics')
+      } catch (e) {
+        this.error = e.message || String(e)
+      }
+    },
+    async changeRole(id) {
+      this.error = null
+      const newRole = prompt("Indica el rol deseado para el usuario (cliente / entrenador / usuario):")
+      if (!newRole) return
+      const r = newRole.trim().toLowerCase()
+      if (!['cliente', 'entrenador', 'usuario'].includes(r)) {
+        alert('Rol inválido')
+        return
+      }
+      if (!confirm(`Confirmar cambiar rol a: ${r}?`)) return
+      try {
+        const res = await api.post(`/api/admin/usuarios/${id}/set_role`, { role: r })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          this.error = j.error || 'Error cambiando rol'
+          return
+        }
+        await this.loadUsers()
+        this.$emit('refresh-metrics')
+      } catch (e) {
+        this.error = e.message || String(e)
+      }
+    },
+    async demoteToClient(id) {
+      this.error = null
+      if (!confirm('Confirmar degradar este entrenador a cliente?')) return
+      try {
+        const res = await api.post(`/api/admin/usuarios/${id}/set_role`, { role: 'cliente' })
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          this.error = j.error || 'Error degradando usuario'
+          return
+        }
+        await this.loadUsers()
+        this.$emit('refresh-metrics')
+      } catch (e) {
+        this.error = e.message || String(e)
+      }
+    },
+    async deactivate(id) {
+      // Soft-disable a user quickly
+      this.error = null
+      if (!confirm('¿Confirmar DESACTIVAR la cuenta de este usuario? (esto hará que su contenido deje de ser público)')) return
+      try {
+        const res = await api.del(`/api/admin/usuarios/${id}?mode=soft`)
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          this.error = j.error || 'Error desactivando usuario'
+          return
+        }
+        await this.loadUsers()
+        this.$emit('refresh-metrics')
+      } catch (e) {
+        this.error = e.message || String(e)
+      }
+    },
+    async reactivate(id) {
+      this.error = null
+      if (!confirm('¿Confirmar REACTIVAR la cuenta de este usuario?')) return
+      try {
+        const res = await api.post(`/api/admin/usuarios/${id}/reactivar`, null)
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}))
+          this.error = j.error || 'Error reactivando usuario'
           return
         }
         await this.loadUsers()

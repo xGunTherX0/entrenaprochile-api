@@ -1,5 +1,7 @@
 import os
 import jwt
+import uuid
+from datetime import datetime
 from functools import wraps
 from flask import request, jsonify
 from datetime import datetime, timedelta
@@ -18,6 +20,8 @@ def generate_token(payload, expires_in: int | None = None):
     data = payload.copy()
     ttl = JWT_EXPIRES_SECONDS if expires_in is None else int(expires_in)
     data['exp'] = datetime.utcnow() + timedelta(seconds=ttl)
+    # Add a unique token id (jti) so we can revoke tokens server-side
+    data['jti'] = str(uuid.uuid4())
     # PyJWT returns a str in modern versions
     token = jwt.encode(data, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
@@ -53,6 +57,20 @@ def jwt_required(view_func):
         decoded = decode_token(token)
         if not decoded:
             return jsonify({'error': 'invalid or expired token'}), 401
+
+        # Check revocation (RevokedToken) if DB is available. Import lazily
+        try:
+            from database.database import RevokedToken
+            from database.database import db as _db
+            jti = decoded.get('jti')
+            if jti:
+                exists = _db.session.query(RevokedToken).filter_by(jti=jti).first()
+                if exists:
+                    return jsonify({'error': 'token revoked'}), 401
+        except Exception:
+            # If DB not available yet (app init), skip revocation check
+            pass
+
         # attach decoded payload to request context
         request.jwt_payload = decoded
         return view_func(*args, **kwargs)

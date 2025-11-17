@@ -1,0 +1,896 @@
+----
+TIME: 2025-11-13T06:57:57.551371
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.instagram_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.instagram_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (9,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'kishi@gmail.com', 'password': 'qwe123'}
+----
+TIME: 2025-11-13T06:58:23.068654
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.instagram_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.instagram_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (9,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'kishi@gmail.com', 'password': 'qwe123'}
+----
+TIME: 2025-11-13T06:58:28.667347
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.instagram_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.instagram_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (9,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'kishi@gmail.com', 'password': 'qwe123'}
+----
+TIME: 2025-11-13T07:00:01.036803
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.instagram_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.instagram_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (7,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'carloscancino010@gmail.com', 'password': 'qwe123'}
+----
+TIME: 2025-11-13T07:03:25.647284
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.instagram_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.instagram_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (9,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'kishi@gmail.com', 'password': 'qwe123'}
+----
+TIME: 2025-11-13T07:03:43.914143
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.instagram_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.instagram_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (9,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'kishi@gmail.com', 'password': 'qwe123'}
+----
+TIME: 2025-11-13T07:15:08.798091
+PATH: /api/usuarios/login
+TRACEBACK:
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: entrenadores.youtube_url
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\backend\app.py", line 218, in login_usuario
+    if getattr(user, 'entrenador', None):
+       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 569, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1096, in get
+    value = self._fire_loader_callables(state, key, passive)
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\attributes.py", line 1131, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ~~~~~~~~~~~~~~~~~~~^
+        session,
+        ^^^^^^^^
+    ...<7 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+        stmt, params, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\carlo\U\EntrenaProChile\.venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: entrenadores.youtube_url
+[SQL: SELECT entrenadores.id AS entrenadores_id, entrenadores.usuario_id AS entrenadores_usuario_id, entrenadores.speciality AS entrenadores_speciality, entrenadores.bio AS entrenadores_bio, entrenadores.telefono AS entrenadores_telefono, entrenadores.instagram_url AS entrenadores_instagram_url, entrenadores.youtube_url AS entrenadores_youtube_url 
+FROM entrenadores 
+WHERE ? = entrenadores.usuario_id]
+[parameters: (7,)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+REQUEST_BODY:
+{'email': 'carloscancino010@gmail.com', 'password': 'qwe123'}

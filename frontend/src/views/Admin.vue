@@ -7,8 +7,14 @@
           <router-link to="/admin/usuarios" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='usuarios'}">Gestionar Usuarios</router-link>
         </li>
         <li class="mb-2">
-          <router-link to="/admin/aprobar" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='aprobar'}">Aprobar Contenido</router-link>
+          <router-link to="/admin/review" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='review'}">Revisión Contenido</router-link>
         </li>
+        <li class="mb-2">
+          <router-link to="/admin/entrenadores" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='entrenadores'}">Perfiles Entrenadores</router-link>
+        </li>
+        <li class="mb-2">
+        </li>
+        <!-- 'Aprobar Contenido' eliminado: la gestión se hace desde la vista de entrenador -->
         <li class="mb-2">
           <router-link to="/admin/metricas" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='metricas'}">Métricas</router-link>
         </li>
@@ -19,7 +25,21 @@
     </nav>
       <main class="flex-1 p-6">
       <h1 class="text-2xl font-bold">Admin Dashboard</h1>
-      
+      <!-- Network/offline banner: show when api reports a last network error -->
+      <div v-if="lastNetworkError" class="mt-4 p-3 rounded bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="font-semibold">Problema de red con el backend</div>
+            <div class="text-sm">No se puede conectar con el servidor: intenta recargar o revisar que el backend esté corriendo.</div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button @click="retryConnections" class="px-2 py-1 bg-blue-600 text-white rounded text-sm">Reintentar</button>
+            <button @click="showNetworkDetails = !showNetworkDetails" class="px-2 py-1 border rounded text-sm">Detalles</button>
+          </div>
+        </div>
+        <div v-if="showNetworkDetails" class="mt-2 text-xs font-mono whitespace-pre-wrap">{{ lastNetworkError }}</div>
+      </div>
+
       <!-- router outlet for admin child panels -->
       <div class="w-full">
         <router-view @refresh-metrics="loadMetrics"></router-view>
@@ -79,7 +99,15 @@ export default {
       showCreateModal: false,
       newUser: { email: '', nombre: '', password: '', role: 'usuario' },
       creating: false,
-      createError: null
+      createError: null,
+      // network banner state
+      showNetworkDetails: false,
+      networkRetryTimer: null
+    }
+  },
+  computed: {
+    lastNetworkError() {
+      try { return api && typeof api.lastNetworkError === 'function' ? api.lastNetworkError() : null } catch(e) { return null }
     }
   },
   mounted() {
@@ -97,7 +125,45 @@ export default {
       if (p) this.select(p)
     })
   },
+  // auto-retry watcher: start/stop interval when lastNetworkError toggles
+  watch: {
+    lastNetworkError(newVal) {
+      // enable automatic retry only in dev/localhost to avoid production noise
+      const hostname = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : ''
+      const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(hostname)
+      const isDevEnv = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) || isLocalHost
+      if (newVal && isDevEnv) {
+        if (!this.networkRetryTimer) {
+          // retry every 10s
+          this.networkRetryTimer = setInterval(() => {
+            try { this.retryConnections() } catch (e) { /* swallow */ }
+          }, 10000)
+        }
+      } else {
+        if (this.networkRetryTimer) {
+          clearInterval(this.networkRetryTimer)
+          this.networkRetryTimer = null
+        }
+      }
+    }
+  },
+  beforeUnmount() {
+    if (this.networkRetryTimer) {
+      clearInterval(this.networkRetryTimer)
+      this.networkRetryTimer = null
+    }
+  },
   methods: {
+    retryConnections() {
+      // try to reload both panels; api wrapper will update its internal lastNetworkError
+      if (this.activePanel === 'usuarios') this.loadUsers()
+      if (this.activePanel === 'metricas') this.loadMetrics()
+      // attempt both regardless
+      this.loadUsers()
+      this.loadMetrics()
+      // hide details until there's something new
+      this.showNetworkDetails = false
+    },
     logout() {
       auth.clearSession()
       this.$router.push('/')
@@ -162,9 +228,12 @@ export default {
     },
     async remove(id) {
       this.error = null
-      if (!confirm('¿Eliminar usuario? Esta acción es irreversible.')) return
+      // Ask admin whether to soft-disable (default) or hard-delete
+      const soft = confirm('¿Deseas DESACTIVAR la cuenta en vez de eliminarla permanentemente?\nAceptar = Desactivar (recomendado), Cancelar = Eliminar permanentemente')
+      if (!confirm('¿Confirmar la acción seleccionada?')) return
+      const mode = soft ? 'soft' : 'hard'
       try {
-        const res = await api.del(`/api/admin/usuarios/${id}`)
+        const res = await api.del(`/api/admin/usuarios/${id}?mode=${mode}`)
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
           this.error = j.error || 'Error borrando usuario'

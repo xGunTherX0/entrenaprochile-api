@@ -1,18 +1,18 @@
 <template>
   <div>
     <h2 class="text-lg font-semibold">Métricas</h2>
-    <div v-if="metrics" class="grid grid-cols-3 gap-4 mt-3">
+    <div v-if="metrics" class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
       <div class="p-4 bg-white rounded shadow">
-        <div class="text-sm text-gray-500">Usuarios</div>
-        <div class="text-2xl font-bold">{{ metrics.total_users }}</div>
+        <div class="text-sm text-gray-500">Usuarios (totales)</div>
+        <div class="text-2xl font-bold">{{ metrics.total_users ?? 0 }}</div>
       </div>
       <div class="p-4 bg-white rounded shadow">
-        <div class="text-sm text-gray-500">Clientes</div>
-        <div class="text-2xl font-bold">{{ metrics.total_clientes }}</div>
+        <div class="text-sm text-gray-500">Clientes (solo)</div>
+        <div class="text-2xl font-bold">{{ metrics.clientes_only ?? metrics.total_clientes ?? 0 }}</div>
       </div>
       <div class="p-4 bg-white rounded shadow">
         <div class="text-sm text-gray-500">Entrenadores</div>
-        <div class="text-2xl font-bold">{{ metrics.total_entrenadores }}</div>
+        <div class="text-2xl font-bold">{{ metrics.total_entrenadores ?? metrics.entrenadores_only ?? 0 }}</div>
       </div>
     </div>
     <div v-else class="mt-3 text-sm text-gray-500">

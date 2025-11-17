@@ -74,7 +74,8 @@ export default {
           const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
           if (Array.isArray(saved) && saved.length > 0) {
             // Intentar sincronizar en paralelo, pero no bloquear demasiado la UI
-            const promises = saved.map(id => api.post(`/api/rutinas/${id}/seguir`, {}))
+            // Create solicitudes for saved rutinas so the trainer must approve them
+            const promises = saved.map(id => api.post(`/api/rutinas/${id}/solicitar`, {}))
             const results = await Promise.allSettled(promises)
             // Contar éxitos
             let success = 0
@@ -99,7 +100,7 @@ export default {
               }
             }
             if (success > 0) {
-              toast.show(`${success} rutinas sincronizadas con el servidor`, 2500)
+              toast.show(`${success} solicitudes de rutina creadas (esperando aprobación)`, 3000)
             }
             // Guardar el resto (fallidos) en localStorage para reintentos futuros
             try {

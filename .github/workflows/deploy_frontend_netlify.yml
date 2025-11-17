@@ -1,0 +1,33 @@
+name: Deploy frontend to Netlify
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+      - name: Deploy to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
+        run: |
+          # If you provide VITE_API_BASE as a secret, write it into a build-time env file
+          if [ -n "$VITE_API_BASE" ]; then echo "VITE_API_BASE=$VITE_API_BASE" > frontend/.env; fi
+          netlify deploy --dir=frontend/dist --prod --site $NETLIFY_SITE_ID --auth $NETLIFY_AUTH_TOKEN

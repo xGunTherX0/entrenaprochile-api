@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/Login.vue'
 import EntrenadorDashboard from '../views/EntrenadorDashboard.vue'
+import EntrenadorAprobar from '../views/EntrenadorAprobar.vue'
 import ClienteDashboard from '../views/ClienteDashboard.vue'
 import ClienteRutina from '../views/ClienteRutina.vue'
 import Home from '../views/Home.vue'
@@ -8,7 +9,6 @@ import Admin from '../views/Admin.vue'
 // Admin child panels
 import AdminUsuarios from '../views/admin/Usuarios.vue'
 import AdminMetricas from '../views/admin/Metricas.vue'
-import AdminAprobar from '../views/admin/Aprobar.vue'
 
 const routes = [
   { path: '/', name: 'Login', component: Login },
@@ -16,7 +16,10 @@ const routes = [
   { path: '/entrenador', redirect: '/entrenador/rutinas' },
   { path: '/entrenador/rutinas', name: 'EntrenadorRutinas', component: EntrenadorDashboard },
   { path: '/entrenador/planes', name: 'EntrenadorPlanes', component: EntrenadorDashboard },
+  { path: '/entrenador/aceptados', name: 'EntrenadorAceptados', component: EntrenadorDashboard },
   { path: '/entrenador/publicar', name: 'EntrenadorPublicar', component: EntrenadorDashboard },
+  { path: '/entrenador/perfil', name: 'EntrenadorPerfil', component: EntrenadorDashboard },
+  { path: '/entrenador/aprobar', name: 'EntrenadorAprobar', component: EntrenadorAprobar },
 
   {
     path: '/cliente',
@@ -30,11 +33,19 @@ const routes = [
       { path: 'misrutinas', name: 'ClienteMisRutinas', component: () => import('../views/MisRutinas.vue') },
       { path: 'rutina/:id', name: 'ClienteRutina', component: () => import('../views/ClienteRutina.vue'), props: true },
       { path: 'plan/:id', name: 'ClientePlan', component: () => import('../views/ClientePlan.vue'), props: true },
-      { path: 'planes', name: 'ClientePlanes', component: () => import('../views/MisPlanes.vue') }
+      { path: 'planes', name: 'ClientePlanes', component: () => import('../views/MisPlanes.vue') },
+      // Entrenadores dentro del layout de Cliente para que el panel lateral siempre se muestre
+      { path: 'entrenadores', name: 'ClienteExplorarEntrenadores', component: () => import('../views/ExplorarEntrenadores.vue') },
+      // Keep the global route name 'EntrenadorPublico' so existing links using that
+      // name continue to resolve, but the component will render inside ClienteLayout.
+      { path: 'entrenadores/:id', name: 'EntrenadorPublico', component: () => import('../views/EntrenadorPublico.vue'), props: true }
     ]
   },
 
   { path: '/home', name: 'Home', component: Home },
+  // Keep legacy top-level routes but redirect to the cliente-layout variants
+  { path: '/entrenadores', redirect: '/cliente/entrenadores' },
+  { path: '/entrenadores/:id', redirect: to => `/cliente/entrenadores/${to.params.id}` },
 
   {
     path: '/admin',
@@ -43,8 +54,11 @@ const routes = [
     redirect: '/admin/usuarios',
     children: [
       { path: 'usuarios', name: 'AdminUsuarios', component: AdminUsuarios },
-      { path: 'metricas', name: 'AdminMetricas', component: AdminMetricas },
-      { path: 'aprobar', name: 'AdminAprobar', component: AdminAprobar }
+      { path: 'review', name: 'AdminReview', component: () => import('../views/admin/AdminReview.vue') },
+      { path: 'entrenadores', name: 'AdminTrainers', component: () => import('../views/admin/AdminTrainers.vue') },
+      { path: 'aceptados', redirect: 'review' },
+      { path: 'usuarios/:id', name: 'AdminUsuarioPerfil', component: () => import('../views/admin/UsuarioPerfil.vue'), props: true },
+      { path: 'metricas', name: 'AdminMetricas', component: AdminMetricas }
     ]
   }
 ]

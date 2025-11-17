@@ -2,13 +2,14 @@
   <div class="min-h-screen flex bg-gray-50">
     <nav class="w-64 bg-white border-r p-4">
       <h2 class="text-xl font-bold mb-4">Cliente</h2>
-      <ul>
+  <ul>
   <li class="mb-2"><router-link to="/cliente/explorar" class="text-left w-full">Explorar Rutinas</router-link></li>
   <li class="mb-2"><router-link to="/cliente/explorar-planes" class="text-left w-full">Explorar Planes Nutricionales</router-link></li>
-        <li class="mb-2"><router-link to="/cliente/misrutinas" class="text-left w-full">Mis Rutinas</router-link></li>
-        <li class="mb-2"><router-link to="/cliente/planes" class="text-left w-full">Mis Planes Nutricionales</router-link></li>
-        <li class="mb-2"><router-link to="/cliente/mediciones" class="text-left w-full">Registro de Mediciones</router-link></li>
-      </ul>
+    <li class="mb-2"><router-link to="/cliente/misrutinas" class="text-left w-full">Mis Rutinas</router-link></li>
+    <li class="mb-2"><router-link to="/cliente/planes" class="text-left w-full">Mis Planes Nutricionales</router-link></li>
+    <li class="mb-2"><router-link to="/cliente/mediciones" class="text-left w-full">Registro de Mediciones</router-link></li>
+    <li class="mb-2"><router-link to="/entrenadores" class="text-left w-full">Ver Entrenadores</router-link></li>
+  </ul>
       <div class="mt-6">
         <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
       </div>
@@ -16,15 +17,19 @@
 
     <main class="flex-1 p-6">
       <router-view />
+      <!-- Dev debug overlay helps show API base and token during local testing -->
+      <DevDebug />
     </main>
   </div>
 </template>
 
 <script>
 import auth from '../utils/auth.js'
+import DevDebug from '../components/DevDebug.vue'
 
 export default {
   name: 'ClienteLayout',
+  components: { DevDebug },
   methods: {
     logout() {
       auth.clearSession()

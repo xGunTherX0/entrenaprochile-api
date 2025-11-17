@@ -7,22 +7,49 @@
       <h2 class="text-xl font-bold">{{ rutina.nombre }}</h2>
       <div class="text-sm text-gray-600 mb-2">Por: {{ rutina.entrenador_nombre || '—' }} | Nivel: {{ rutina.nivel }}</div>
       <p class="mb-4">{{ rutina.descripcion }}</p>
-
-      <div class="flex items-center space-x-2 mb-4">
-        <button :disabled="saving || localSaved" @click="follow" class="px-3 py-2 bg-green-600 text-white rounded">{{ saving ? 'Guardando...' : (localSaved ? 'Guardado' : 'Guardar rutina') }}</button>
+      <!-- Mostrar secciones descriptivas completas -->
+      <div v-if="rutina.objetivo_principal" class="mb-2">
+        <strong>Objetivo principal:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.objetivo_principal }}</div>
+      </div>
+      <div v-if="rutina.enfoque_rutina" class="mb-2">
+        <strong>Enfoque:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.enfoque_rutina }}</div>
+      </div>
+      <div v-if="rutina.cualidades_clave" class="mb-2">
+        <strong>Cualidades clave:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.cualidades_clave }}</div>
+      </div>
+      <div v-if="rutina.duracion_frecuencia" class="mb-2">
+        <strong>Duración / Frecuencia:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.duracion_frecuencia }}</div>
+      </div>
+      <div v-if="rutina.material_requerido" class="mb-2">
+        <strong>Material requerido:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.material_requerido }}</div>
+      </div>
+      <div v-if="rutina.instrucciones_estructurales" class="mb-2">
+        <strong>Instrucciones estructurales:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.instrucciones_estructurales }}</div>
+      </div>
+      <div v-if="rutina.seccion_descripcion" class="mb-2">
+        <strong>Sección seleccionada:</strong>
+        <div class="text-sm text-gray-700">{{ rutina.seccion_descripcion }}</div>
+      </div>
+      <div v-if="rutina.link_url" class="flex items-center space-x-3 mb-4">
+        <a :href="rutina.link_url" target="_blank" rel="noopener noreferrer" class="px-3 py-2 bg-green-600 text-white rounded">Abrir enlace</a>
+        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(rutina.link_url)}`" alt="QR" class="w-24 h-24 border rounded" />
       </div>
 
-      <div class="border-t pt-4">
-        <h3 class="font-semibold mb-2">Plan alimenticio (placeholder)</h3>
-        <p>Aquí irá el plan alimenticio asociado. Por ahora se muestra un placeholder.</p>
-      </div>
+      <!-- "Solicitar rutina" button removed per request -->
+
+      <!-- Plan alimenticio placeholder removed per request: show only the rutina -->
     </div>
   </div>
 </template>
 
 <script>
 import api from '../utils/api.js'
-import auth from '../utils/auth.js'
 
 export default {
   name: 'ClienteRutina',
@@ -31,55 +58,14 @@ export default {
       rutina: null,
       loading: true,
       error: null,
-      saving: false,
-      localSaved: false
+      // saving/localSaved removed: this view no longer offers "Solicitar rutina"
     }
   },
   methods: {
-    openSolicitar() {
-      // placeholder action
-      alert('Funcionalidad de solicitar plan aún no implementada')
-    },
-    async follow() {
-      if (!this.rutina || !this.rutina.id) return
-      this.saving = true
-      try {
-        const res = await api.post(`/api/rutinas/${this.rutina.id}/seguir`, {})
-        const body = await res.json()
-        if (!res.ok) throw new Error(body.error || 'Error guardando rutina')
-        // success: maybe show a small message
-        alert('Rutina guardada (servidor)')
-        // mark locally as saved as well
-        try {
-          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
-          if (!saved.includes(this.rutina.id)) {
-            saved.push(this.rutina.id)
-            localStorage.setItem('saved_rutinas', JSON.stringify(saved))
-          }
-          this.localSaved = true
-        } catch (e) {}
-      } catch (err) {
-        console.error('follow rutina', err)
-        // fallback: save locally
-        try {
-          const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
-          if (!saved.includes(this.rutina.id)) {
-            saved.push(this.rutina.id)
-            localStorage.setItem('saved_rutinas', JSON.stringify(saved))
-          }
-          this.localSaved = true
-          alert('Rutina guardada localmente (inicia sesión para sincronizar)')
-        } catch (e) {
-          console.error('local fallback failed', e)
-        }
-      } finally {
-        this.saving = false
-      }
-    }
+    // solicitar removed: this view no longer supports creating solicitudes
   },
   async mounted() {
     const id = this.$route.params.id
-    // Defensive: avoid calling the backend with invalid ids like null/undefined
     if (!id || id === 'null' || isNaN(Number(id))) {
       this.error = 'ID de rutina inválido'
       this.loading = false
@@ -87,7 +73,7 @@ export default {
     }
 
     try {
-      const res = await api.get(`/api/rutinas/public/${id}`, { skipAuth: true })
+      const res = await api.get(`/api/rutinas/public/${id}`)
       const body = await res.json()
       if (!res.ok) throw new Error(body.error || 'Error obteniendo rutina')
       this.rutina = body
@@ -95,13 +81,7 @@ export default {
       this.error = err.message
     } finally {
       this.loading = false
-      // set localSaved state
-      try {
-        const saved = JSON.parse(localStorage.getItem('saved_rutinas') || '[]')
-        this.localSaved = Array.isArray(saved) && saved.includes(Number(id))
-      } catch (e) {
-        this.localSaved = false
-      }
+      // no localSaved handling needed any more
     }
   }
 }

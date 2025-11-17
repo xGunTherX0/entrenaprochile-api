@@ -2,7 +2,37 @@ import auth from './auth.js'
 import toast from './toast.js'
 import router from '../router'
 
-const BASE = import.meta.env.VITE_API_BASE || 'https://entrenaprochile-api.onrender.com'
+// In dev, prefer a relative base so Vite's dev-server proxy can handle `/api` requests
+// If `VITE_API_BASE` is explicitly set, use it. Otherwise use '' in dev, and the
+// production host for non-dev builds.
+let BASE = import.meta.env.VITE_API_BASE !== undefined
+  ? import.meta.env.VITE_API_BASE
+  : (import.meta.env.DEV ? '' : 'https://entrenaprochile-api.onrender.com')
+// Normalize common shorthand values that developers sometimes set incorrectly
+// e.g. ":5000" or "localhost:5000" -> ensure a full URL with scheme
+try {
+  if (typeof BASE === 'string') {
+    const b = BASE.trim()
+    // If BASE is intentionally empty (dev/proxy), keep it empty so relative
+    // URLs are used and Vite proxy can intercept them.
+    if (b === '') {
+      BASE = ''
+    } else if (b.startsWith(':')) {
+      // ":5000" -> "http://localhost:5000"
+      BASE = 'http://localhost' + b
+    } else if (/^[0-9]+$/.test(b)) {
+      // "5000" -> "http://localhost:5000"
+      BASE = 'http://localhost:' + b
+    } else if (!b.startsWith('http://') && !b.startsWith('https://')) {
+      // "localhost:5000" -> "http://localhost:5000"
+      BASE = 'http://' + b
+    }
+  }
+} catch (e) {
+  // fallback: keep original BASE
+}
+// Expose last network error for debug overlay
+let lastNetworkError = null
 
 function buildUrl(path) {
   if (!path) return BASE
@@ -22,30 +52,28 @@ async function request(path, opts = {}) {
   try {
     const res = await fetch(url, opts)
     // Only auto-redirect on auth errors when this request expected auth (skipAuth !== true).
-    // If caller passed { skipAuth: true } we return the response so the caller can decide
-    // how to handle 401/403 (for example when fetching a public resource).
     if (res && (res.status === 401 || res.status === 403) && !opts.skipAuth) {
-      // Inform the user but DO NOT forcibly clear local session or redirect.
-      // Automatic logout on any 401/403 caused accidental sign-outs (e.g. flaky
-      // network, token verification race, or transient server issues). Keep
-      // the token in localStorage so the user stays logged in and let UI
-      // components handle failures per-request if they need to.
-      try {
-        toast.show('No autorizado o sesión inválida — las acciones pueden fallar, por favor reintenta. Si sigues teniendo problemas cierra sesión e inicia sesión nuevamente.', 4000)
-      } catch (e) {}
-      // Return the response so caller can decide what to do (show a modal,
-      // attempt retry, or manually clear session). We deliberately avoid
-      // calling auth.clearSession() or router.push('/') here.
+      try { toast.show('No autorizado o sesión inválida — las acciones pueden fallar, por favor reintenta.', 4000) } catch (e) {}
     }
+    lastNetworkError = null
     return res
   } catch (e) {
-    // rethrow for caller to handle network errors
-    throw e
+    // Record last network error for debug UI, and return a safe faux-response
+    lastNetworkError = (e && e.message) ? e.message : String(e)
+    try { toast.show('Error de red: ' + lastNetworkError, 4000) } catch (_) {}
+    // Provide a Response-like object so callers using `res.ok` and `res.json()` don't throw
+    return {
+      ok: false,
+      status: 0,
+      json: async () => ({ error: 'network error', detail: lastNetworkError }),
+      text: async () => lastNetworkError
+    }
   }
 }
 
 export default {
   BASE,
+  lastNetworkError: () => lastNetworkError,
   request,
   get: (path, opts = {}) => request(path, { ...opts, method: 'GET' }),
   post: (path, body, opts = {}) => request(path, { ...opts, method: 'POST', headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, body: JSON.stringify(body) }),

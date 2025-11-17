@@ -74,7 +74,7 @@
                 <p class="mt-3 text-sm text-gray-700">{{ r.descripcion }}</p>
                 <div class="mt-4 flex items-center justify-between">
                   <button @click="openRutinaDetail(r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
-                  <button :disabled="savingFollowIds.includes(r.id) || localSavedRutinas.includes(r.id)" @click="followRutina(r.id)" class="px-3 py-1 bg-green-600 text-white rounded">{{ savingFollowIds.includes(r.id) ? 'Guardando...' : (localSavedRutinas.includes(r.id) ? 'Guardado' : 'Guardar rutina') }}</button>
+                  <button :disabled="savingFollowIds.includes(r.id)" @click="followRutina(r.id)" class="px-3 py-1 bg-green-600 text-white rounded">{{ savingFollowIds.includes(r.id) ? 'Enviando...' : 'Solicitar rutina' }}</button>
                 </div>
               </div>
             </div>
@@ -98,12 +98,14 @@
             <ul class="mt-2 space-y-2">
                 <li v-for="r in misRutinas" :key="r.id" class="p-3 border rounded bg-white flex justify-between items-center">
                 <div>
-                    <div class="font-semibold">{{ r.nombre }} <span v-if="(r._localOnly) || (localSavedRutinas && localSavedRutinas.includes(Number(r.id)))" class="ml-2 text-xs px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded">Guardada localmente</span></div>
+                    <div class="font-semibold">{{ r.nombre }}</div>
                   <div class="text-sm text-gray-600">{{ r.descripcion }}</div>
+                  <div v-if="r.solicitud_id" class="text-xs text-yellow-700">Estado: {{ r.estado || 'pendiente' }}</div>
                 </div>
                 <div class="space-x-2">
-                  <button @click="openRutinaDetail(r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
-                  <button @click="unfollowRutina(r.id)" class="px-3 py-1 bg-red-600 text-white rounded">Eliminar</button>
+                  <button @click="openRutinaDetail(r.real_rutina_id || r.id)" class="px-3 py-1 bg-blue-600 text-white rounded">Ver</button>
+                  <button v-if="r.solicitud_id" @click="cancelSolicitud(r.solicitud_id)" class="px-3 py-1 bg-red-600 text-white rounded">Cancelar solicitud</button>
+                  <button v-else @click="unfollowRutina(r.id)" class="px-3 py-1 bg-red-600 text-white rounded">Eliminar</button>
                 </div>
               </li>
             </ul>
@@ -133,13 +135,13 @@
               </li>
             </ul>
 
-            <h3 class="font-semibold mb-2">Solicitudes de plan</h3>
-            <div v-if="misSolicitudes.length===0" class="text-sm text-gray-600">No has solicitado ningún plan aún.</div>
+            <h3 class="font-semibold mb-2">Solicitudes de Plan</h3>
+            <div v-if="(misSolicitudes || []).filter(s => s.plan_id && !s.rutina_id).length === 0" class="text-sm text-gray-600">No has solicitado ningún plan aún.</div>
             <ul class="mt-2 space-y-2">
-              <li v-for="s in misSolicitudes" :key="s.id" class="p-3 border rounded bg-white">
+              <li v-for="s in (misSolicitudes || []).filter(s => s.plan_id && !s.rutina_id)" :key="s.id" class="p-3 border rounded bg-white">
                 <div class="flex justify-between items-start">
                   <div>
-                    <div class="font-semibold">{{ s.rutina_nombre || ('Rutina ' + s.rutina_id) }}</div>
+                    <div class="font-semibold">{{ s.plan_nombre || ('Plan ' + s.plan_id) }}</div>
                     <div class="text-sm text-gray-600">Estado: {{ s.estado }} — {{ s.creado_en ? new Date(s.creado_en).toLocaleString() : '' }}</div>
                     <div v-if="s.nota" class="text-sm mt-1">Nota: {{ s.nota }}</div>
                   </div>
@@ -297,27 +299,16 @@ export default {
       // optimistically show saving state per-rutina
       if (!this.savingFollowIds.includes(rutinaId)) this.savingFollowIds.push(rutinaId)
       try {
-        const res = await api.post(`/api/rutinas/${rutinaId}/seguir`, {})
+        // Create a solicitud instead of directly saving the rutina. Trainer must accept.
+        const res = await api.post(`/api/rutinas/${rutinaId}/solicitar`, {})
         const body = await res.json()
-        if (!res.ok) throw new Error(body.error || 'Error guardando rutina')
-        // success: update local marker
-        if (!this.localSavedRutinas.includes(rutinaId)) {
-          this.localSavedRutinas.push(rutinaId)
-          localStorage.setItem('saved_rutinas', JSON.stringify(this.localSavedRutinas))
-        }
-        // option: show small message
-        // toast.show('Rutina guardada', 2000)
+        if (!res.ok) throw new Error(body.error || 'Error solicitando rutina')
+        // navigate to Mis Rutinas where solicitudes are shown
+        try { this.$router.push('/cliente/misrutinas') } catch (e) {}
+        try { (await import('../utils/toast.js')).default.show('Solicitud creada. Revisa Mis Rutinas para ver el estado.', 3000) } catch (e) { /* ignore */ }
       } catch (err) {
-        console.error('followRutina, falling back to local save', err)
-        // Fallback: save locally so user can see it in "Mis rutinas" even if server failed
-        try {
-          if (!this.localSavedRutinas.includes(rutinaId)) {
-            this.localSavedRutinas.push(rutinaId)
-            localStorage.setItem('saved_rutinas', JSON.stringify(this.localSavedRutinas))
-          }
-        } catch (e) {
-          console.error('local save failed', e)
-        }
+        console.error('solicitarRutina failed', err)
+        try { alert('No se pudo solicitar la rutina: ' + (err.message || err)) } catch (e) {}
       } finally {
         const idx = this.savingFollowIds.indexOf(rutinaId)
         if (idx !== -1) this.savingFollowIds.splice(idx, 1)
@@ -343,6 +334,25 @@ export default {
       } catch (err) {
         console.error('unfollowRutina failed', err)
         try { alert('No se pudo eliminar la rutina guardada: ' + (err.message || err)) } catch (e) {}
+      }
+    },
+
+    async cancelSolicitud(solicitudId) {
+      if (!solicitudId) return
+      if (!confirm('¿Seguro que quieres cancelar esta solicitud?')) return
+      try {
+        const res = await api.del(`/api/solicitudes/${solicitudId}`)
+        let body = {}
+        try { body = await res.json() } catch (e) { body = {} }
+        if (!res.ok) throw new Error(body.error || 'Error cancelando solicitud')
+        // remove from misSolicitudes
+        this.misSolicitudes = (this.misSolicitudes || []).filter(s => s.id !== solicitudId)
+        // remove any placeholder in misRutinas that was created for this solicitud
+        this.misRutinas = (this.misRutinas || []).filter(r => r.solicitud_id !== solicitudId)
+        try { alert('Solicitud cancelada') } catch (e) {}
+      } catch (err) {
+        console.error('cancelSolicitud failed', err)
+        try { alert('No se pudo cancelar la solicitud: ' + (err.message || err)) } catch (e) {}
       }
     },
 
@@ -452,38 +462,26 @@ export default {
           this.localSavedRutinas = []
         }
 
-        if ((this.localSavedRutinas || []).length > 0) {
-          const existingIds = new Set((this.misRutinas || []).map(r => r.id))
-          for (const rid of this.localSavedRutinas) {
-            if (!existingIds.has(rid)) {
-              try {
-                // Attempt to fetch rutina detail (public fallback)
-                const rr = await api.get(`/api/rutinas/${rid}`, { skipAuth: true })
-                if (rr && rr.ok) {
-                  const detail = await rr.json()
-                  // mark as local-only because it wasn't returned by /api/rutinas/mis
-                  detail._localOnly = true
-                  this.misRutinas.push(detail)
-                  existingIds.add(rid)
-                } else {
-                  // Create a minimal placeholder so the user sees the saved item
-                  this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '', _localOnly: true })
-                  existingIds.add(rid)
-                }
-              } catch (err) {
-                console.error('failed to fetch rutina detail for', rid, err)
-                this.misRutinas.push({ id: rid, nombre: 'Rutina guardada', descripcion: '', _localOnly: true })
-                existingIds.add(rid)
-              }
-            }
-          }
-        }
+        // Do not merge locally-saved rutina placeholders here; show only server-synced data.
 
         // solicitudes
         try {
           const r2 = await api.get('/api/solicitudes/mis')
           if (r2 && r2.ok) {
             this.misSolicitudes = await r2.json()
+            // Merge rutina-type solicitudes into misRutinas as pending placeholders
+            const rutinaSolicitudes = (this.misSolicitudes || []).filter(s => {
+              if (!s) return false
+              const rid = Number(s.rutina_id)
+              return !isNaN(rid) && rid > 0
+            })
+            for (let i = 0; i < rutinaSolicitudes.length; i++) {
+              const s = rutinaSolicitudes[i]
+              // Skip if rutina already present (accepted)
+              const exists = this.misRutinas.find(r => Number(r.id) === Number(s.rutina_id))
+              if (exists) continue
+              this.misRutinas.push({ id: `solicitud-${s.id}`, real_rutina_id: s.rutina_id, nombre: s.rutina_nombre || ('Rutina ' + s.rutina_id), descripcion: s.nota || '', solicitud_id: s.id, estado: s.estado || 'pendiente' })
+            }
           }
         } catch (e) {
           console.error('fetch mis solicitudes failed', e)
