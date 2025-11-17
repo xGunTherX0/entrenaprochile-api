@@ -2090,7 +2090,27 @@ def admin_list_users():
 
     try:
         from database.database import Usuario
-        users = Usuario.query.order_by(Usuario.creado_en.desc()).all()
+        try:
+            users = Usuario.query.order_by(Usuario.creado_en.desc()).all()
+        except Exception as qe:
+            # If the error is due to missing columns (e.g., usuarios.activo), try a safe repair
+            try:
+                from sqlalchemy.exc import ProgrammingError
+                err_str = str(qe)
+                if 'column usuarios.activo does not exist' in err_str or 'activo' in err_str or isinstance(qe, ProgrammingError):
+                    # Attempt to add the missing column and retry once
+                    try:
+                        db.session.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true"))
+                        db.session.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0"))
+                        db.session.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP"))
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+                # Retry the query once
+                users = Usuario.query.order_by(Usuario.creado_en.desc()).all()
+            except Exception:
+                # Re-raise the original for outer handler
+                raise
         ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
         result = []
         for u in users:
@@ -2105,6 +2125,7 @@ def admin_list_users():
             result.append({'id': u.id, 'email': u.email, 'nombre': u.nombre, 'creado_en': u.creado_en.isoformat(), 'role': urole, 'activo': getattr(u, 'activo', True)})
         return jsonify(result), 200
     except Exception as e:
+        app.logger.exception('admin_list_users failed')
         return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
