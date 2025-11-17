@@ -382,6 +382,38 @@ if not DATABASE_URL:
         pass
 
 
+# --- Reparaciones ligeras de esquema en producción ---
+# Algunos despliegues (p. ej. al restaurar una DB antigua) pueden carecer de
+# columnas que el código asume presentes. Hacemos un intento seguro y no fatal
+# de añadir las columnas mínimas usadas en tiempo de ejecución para evitar
+# errores como `column usuarios.activo does not exist`.
+if DATABASE_URL:
+    try:
+        with app.app_context():
+            try:
+                # Añadir columnas si faltan (Postgres soporta IF NOT EXISTS)
+                db.session.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT true"))
+                db.session.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0"))
+                db.session.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP"))
+                # Tabla para tokens revocados (si no existe)
+                # Use SERIAL para compatibilidad con Postgres; SQLite ignorará SERIAL
+                try:
+                    db.session.execute(text("CREATE TABLE IF NOT EXISTS revoked_tokens (id SERIAL PRIMARY KEY, jti VARCHAR(128) UNIQUE NOT NULL, revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
+                except Exception:
+                    # Fallback: portable create without SERIAL (use integer PK)
+                    try:
+                        db.session.execute(text("CREATE TABLE IF NOT EXISTS revoked_tokens (id INTEGER PRIMARY KEY, jti VARCHAR(128) UNIQUE NOT NULL, revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"))
+                    except Exception:
+                        pass
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+    except Exception:
+        # No bloquear el arranque por fallos en estas reparaciones; dejamos que
+        # el app.logger capture detalles en los logs de Render.
+        app.logger.exception('production schema repair failed')
+
+
 # Ruta de prueba rápida
 @app.route('/ping')
 def ping():
