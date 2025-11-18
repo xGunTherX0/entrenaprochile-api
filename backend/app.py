@@ -215,10 +215,20 @@ def login_usuario():
         role = 'admin'
     else:
         role = 'usuario'
-        if getattr(user, 'entrenador', None):
-            role = 'entrenador'
-        elif getattr(user, 'cliente', None):
-            role = 'cliente'
+        # Avoid lazy-loading relationship attributes which can trigger
+        # queries referencing missing columns on related tables (e.g. entrenadores.bio).
+        # Instead, check existence using minimal SQL that only selects usuario_id.
+        try:
+            row = db.session.execute(text('SELECT 1 FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+            if row:
+                role = 'entrenador'
+            else:
+                row2 = db.session.execute(text('SELECT 1 FROM clientes WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+                if row2:
+                    role = 'cliente'
+        except Exception:
+            # If any DB error occurs, fall back to 'usuario' to avoid blocking login.
+            role = getattr(user, '_role_fallback', 'usuario')
 
     # Reset failed attempts on successful login
     try:
