@@ -1992,8 +1992,51 @@ def admin_list_users():
                         db.session.commit()
                     except Exception:
                         db.session.rollback()
-                # Retry the query once
-                users = Usuario.query.order_by(Usuario.creado_en.desc()).all()
+
+                # Retry the ORM query once
+                try:
+                    users = Usuario.query.order_by(Usuario.creado_en.desc()).all()
+                except Exception as qe2:
+                    # As a robust fallback, perform a raw SQL select that only references known-safe tables/columns
+                    # This helps the admin UI survive partial schema drift.
+                    try:
+                        # Use COALESCE on creado_en to ensure ORDER BY works even when column is NULL/missing
+                        rows = db.session.execute(text("""
+                            SELECT u.id, u.email, u.nombre, u.creado_en, u.activo,
+                                CASE WHEN e.usuario_id IS NOT NULL THEN 'entrenador' WHEN c.usuario_id IS NOT NULL THEN 'cliente' ELSE 'usuario' END as role
+                            FROM usuarios u
+                            LEFT JOIN entrenadores e ON e.usuario_id = u.id
+                            LEFT JOIN clientes c ON c.usuario_id = u.id
+                            ORDER BY COALESCE(u.creado_en, to_timestamp(0)) DESC
+                        """)).fetchall()
+
+                        users = []
+                        for rw in rows:
+                            # Build a simple object with attributes used later in response construction
+                            u = type('U', (), {})()
+                            try:
+                                # Row may be mapping-like or tuple-like depending on DB driver
+                                u.id = rw['id'] if 'id' in rw.keys() else rw[0]
+                                u.email = rw['email'] if 'email' in rw.keys() else (rw[1] if len(rw) > 1 else None)
+                                u.nombre = rw['nombre'] if 'nombre' in rw.keys() else (rw[2] if len(rw) > 2 else None)
+                                u.creado_en = rw['creado_en'] if 'creado_en' in rw.keys() else None
+                                u.activo = rw['activo'] if 'activo' in rw.keys() else True
+                                u._role_fallback = rw['role'] if 'role' in rw.keys() else 'usuario'
+                            except Exception:
+                                # Safe fallback for unexpected row shapes
+                                try:
+                                    u.id = rw[0]
+                                except Exception:
+                                    u.id = None
+                                u.email = None
+                                u.nombre = None
+                                u.creado_en = None
+                                u.activo = True
+                                u._role_fallback = 'usuario'
+                            users.append(u)
+                    except Exception:
+                        # If even the fallback fails, re-raise the original error so it is logged and surfaced.
+                        raise
             except Exception:
                 # Re-raise the original for outer handler
                 raise
