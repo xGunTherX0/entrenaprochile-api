@@ -2042,16 +2042,51 @@ def admin_list_users():
                 raise
         ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
         result = []
+
+        # Avoid accessing relationship attributes (u.entrenador / u.cliente)
+        # because lazy-loading them can trigger SELECTs that reference
+        # columns that may be missing (e.g. entrenadores.bio). Instead,
+        # fetch the lists of usuario_id from entrenadores and clientes
+        # using raw SQL and use those sets to compute roles safely.
+        try:
+            ent_rows = db.session.execute(text('SELECT usuario_id FROM entrenadores')).fetchall()
+            entrenador_user_ids = set([r[0] for r in ent_rows if r and r[0] is not None])
+        except Exception:
+            entrenador_user_ids = set()
+        try:
+            cli_rows = db.session.execute(text('SELECT usuario_id FROM clientes')).fetchall()
+            cliente_user_ids = set([r[0] for r in cli_rows if r and r[0] is not None])
+        except Exception:
+            cliente_user_ids = set()
+
         for u in users:
-            if u.email == ADMIN_EMAIL:
+            try:
+                uid = getattr(u, 'id', None)
+            except Exception:
+                uid = None
+            try:
+                uemail = getattr(u, 'email', None)
+            except Exception:
+                uemail = None
+
+            if uemail == ADMIN_EMAIL:
                 urole = 'admin'
-            elif getattr(u, 'entrenador', None):
+            elif uid in entrenador_user_ids:
                 urole = 'entrenador'
-            elif getattr(u, 'cliente', None):
+            elif uid in cliente_user_ids:
                 urole = 'cliente'
             else:
-                urole = 'usuario'
-            result.append({'id': u.id, 'email': u.email, 'nombre': u.nombre, 'creado_en': u.creado_en.isoformat(), 'role': urole, 'activo': getattr(u, 'activo', True)})
+                # When we created fallback rows they may include _role_fallback
+                urole = getattr(u, '_role_fallback', 'usuario')
+
+            # Safe access for created timestamp and activo flag
+            try:
+                creado_str = u.creado_en.isoformat() if getattr(u, 'creado_en', None) else None
+            except Exception:
+                creado_str = None
+            activo_val = getattr(u, 'activo', True)
+
+            result.append({'id': uid, 'email': uemail, 'nombre': getattr(u, 'nombre', None), 'creado_en': creado_str, 'role': urole, 'activo': activo_val})
         return jsonify(result), 200
     except Exception as e:
         app.logger.exception('admin_list_users failed')
