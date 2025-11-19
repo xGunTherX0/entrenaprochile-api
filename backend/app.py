@@ -146,6 +146,48 @@ from sqlalchemy import text
 import traceback
 
 
+# Helper functions: read minimal Entrenador rows via raw SQL to avoid selecting
+# all columns (some deployments have schema drift where columns like `bio`
+# are missing and ORM-selects fail). These return a tiny object with only
+# the attributes used by handlers (`id`, `usuario_id`). They intentionally
+# avoid instantiating SQLAlchemy model objects which trigger full-column
+# SELECTs and mapping.
+def _safe_entrenador_by_usuario_id(usuario_id):
+    try:
+        row = db.session.execute(text("SELECT id, usuario_id FROM entrenadores WHERE usuario_id = :uid LIMIT 1"), {'uid': usuario_id}).fetchone()
+        if not row:
+            return None
+        e = type('E', (), {})()
+        try:
+            keys = row.keys()
+            e.id = row['id'] if 'id' in keys else row[0]
+            e.usuario_id = row['usuario_id'] if 'usuario_id' in keys else (row[1] if len(row) > 1 else None)
+        except Exception:
+            e.id = row[0]
+            e.usuario_id = row[1] if len(row) > 1 else None
+        return e
+    except Exception:
+        return None
+
+
+def _safe_entrenador_by_id(entrenador_id):
+    try:
+        row = db.session.execute(text("SELECT id, usuario_id FROM entrenadores WHERE id = :eid LIMIT 1"), {'eid': entrenador_id}).fetchone()
+        if not row:
+            return None
+        e = type('E', (), {})()
+        try:
+            keys = row.keys()
+            e.id = row['id'] if 'id' in keys else row[0]
+            e.usuario_id = row['usuario_id'] if 'usuario_id' in keys else (row[1] if len(row) > 1 else None)
+        except Exception:
+            e.id = row[0]
+            e.usuario_id = row[1] if len(row) > 1 else None
+        return e
+    except Exception:
+        return None
+
+
 @app.route('/api/usuarios/register', methods=['POST'])
 def register_usuario():
     data = request.get_json() or {}
@@ -540,7 +582,7 @@ def crear_rutina():
             return jsonify({'error': 'forbidden: cannot create rutina for another entrenador'}), 403
 
     # Buscar entrenador por el usuario autenticado (from token)
-    entrenador = Entrenador.query.filter_by(usuario_id=header_user_id).first()
+    entrenador = _safe_entrenador_by_usuario_id(header_user_id)
     if not entrenador:
         return jsonify({'error': 'entrenador not found or not authenticated as entrenador'}), 404
 
@@ -687,7 +729,7 @@ def listar_rutinas(entrenador_usuario_id):
         if header_user_id != entrenador_usuario_id:
             return jsonify({'error': 'forbidden: cannot view rutinas of another entrenador'}), 403
 
-        entrenador = Entrenador.query.filter_by(usuario_id=entrenador_usuario_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(entrenador_usuario_id)
         if not entrenador:
             return jsonify({'error': 'entrenador not found'}), 404
 
@@ -808,11 +850,22 @@ def listar_rutinas_publicas():
             # intentar obtener nombre del entrenador si existe y sólo mostrar si el usuario está activo
             entrenador_nombre = None
             try:
-                ent = Entrenador.query.filter_by(id=r.entrenador_id).first()
-                # skip rutinas if entrenador was deleted or its usuario is missing/inactive
-                if not ent or not getattr(ent, 'usuario', None) or getattr(ent.usuario, 'activo', True) is False:
+                ent = _safe_entrenador_by_id(r.entrenador_id)
+                # skip rutinas if entrenador was deleted or its usuario is missing
+                if not ent or not getattr(ent, 'usuario_id', None):
                     continue
-                entrenador_nombre = ent.usuario.nombre
+                # Query Usuario.nombre directly to avoid touching Entrenador relationship
+                try:
+                    urow = db.session.execute(text('SELECT nombre, activo FROM usuarios WHERE id = :uid'), {'uid': ent.usuario_id}).fetchone()
+                    if not urow:
+                        continue
+                    keys = getattr(urow, 'keys', lambda: [])()
+                    activo_val = urow['activo'] if 'activo' in keys else (urow[1] if len(urow) > 1 else None)
+                    if activo_val is False:
+                        continue
+                    entrenador_nombre = urow['nombre'] if 'nombre' in keys else (urow[0] if len(urow) > 0 else None)
+                except Exception:
+                    entrenador_nombre = None
             except Exception:
                 entrenador_nombre = None
             result.append({'id': r.id, 'nombre': r.nombre, 'descripcion': r.descripcion, 'objetivo_principal': getattr(r, 'objetivo_principal', None), 'enfoque_rutina': getattr(r, 'enfoque_rutina', None), 'cualidades_clave': getattr(r, 'cualidades_clave', None), 'duracion_frecuencia': getattr(r, 'duracion_frecuencia', None), 'material_requerido': getattr(r, 'material_requerido', None), 'instrucciones_estructurales': getattr(r, 'instrucciones_estructurales', None), 'seccion_descripcion': getattr(r, 'seccion_descripcion', None), 'nivel': r.nivel, 'es_publica': r.es_publica, 'creado_en': creado_val, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': r.entrenador_id, 'entrenador_usuario_id': getattr(ent, 'usuario_id', None) if ent else None, 'link_url': getattr(r, 'link_url', None)})
@@ -859,8 +912,8 @@ def obtener_rutina_publica(rutina_id):
                         allowed = False
                         # trainer owner check
                         try:
-                            entrenador = Entrenador.query.filter_by(id=getattr(rutina, 'entrenador_id', None)).first()
-                            if entrenador and entrenador.usuario_id == token_user_id:
+                            entrenador = _safe_entrenador_by_id(getattr(rutina, 'entrenador_id', None))
+                            if entrenador and getattr(entrenador, 'usuario_id', None) == token_user_id:
                                 allowed = True
                         except Exception:
                             allowed = False
@@ -895,7 +948,7 @@ def obtener_rutina_publica(rutina_id):
         entrenador_usuario_id = None
         try:
             # Be defensive: avoid touching relationship attributes that may trigger unexpected errors
-            ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
+            ent = _safe_entrenador_by_id(entrenador_id) if entrenador_id else None
             if ent:
                 entrenador_usuario_id = getattr(ent, 'usuario_id', None)
                 if entrenador_usuario_id:
@@ -946,8 +999,8 @@ def obtener_rutina_publica_explicit(rutina_id):
                         token_user_id = token_payload.get('user_id')
                         allowed = False
                         try:
-                            entrenador = Entrenador.query.filter_by(id=getattr(rutina, 'entrenador_id', None)).first()
-                            if entrenador and entrenador.usuario_id == token_user_id:
+                            entrenador = _safe_entrenador_by_id(getattr(rutina, 'entrenador_id', None))
+                            if entrenador and getattr(entrenador, 'usuario_id', None) == token_user_id:
                                 allowed = True
                         except Exception:
                             allowed = False
@@ -978,7 +1031,7 @@ def obtener_rutina_publica_explicit(rutina_id):
         entrenador_id = getattr(rutina, 'entrenador_id', None)
         entrenador_usuario_id = None
         try:
-            ent = Entrenador.query.filter_by(id=entrenador_id).first() if entrenador_id else None
+            ent = _safe_entrenador_by_id(entrenador_id) if entrenador_id else None
             if ent:
                 entrenador_usuario_id = getattr(ent, 'usuario_id', None)
                 entrenador_nombre = getattr(ent.usuario, 'nombre', None) if getattr(ent, 'usuario', None) else None
@@ -1284,7 +1337,7 @@ def listar_solicitudes_pendientes():
         return jsonify({'error': 'authentication required'}), 401
 
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
     if not entrenador:
@@ -1368,7 +1421,7 @@ def actualizar_solicitud_estado(solicitud_id):
         return jsonify({'error': 'authentication required'}), 401
 
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
     if not entrenador:
@@ -1428,7 +1481,7 @@ def crear_plan():
 
     # Verify entrenador (defensive: catch DB errors here separately so we can log them)
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         app.logger.exception('crear_plan: entrenador lookup failed')
         return jsonify({'error': 'db error'}), 500
@@ -1505,7 +1558,7 @@ def generar_plan():
     if not token_user_id:
         return jsonify({'error': 'authentication required'}), 401
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
     if not entrenador:
@@ -1594,7 +1647,7 @@ def listar_planes_publicos():
                 creado = None
             entrenador_nombre = None
             try:
-                ent = Entrenador.query.filter_by(id=p.entrenador_id).first()
+                ent = _safe_entrenador_by_id(p.entrenador_id)
                 # skip plans if entrenador was deleted or its usuario is missing/inactive
                 if not ent or not getattr(ent, 'usuario', None) or getattr(ent.usuario, 'activo', True) is False:
                     # do not expose plans that belong to non-existent or deactivated trainers
@@ -1650,7 +1703,7 @@ def obtener_plan_publico(plan_id):
                         allowed = False
                         # trainer owner check
                         try:
-                            entrenador = Entrenador.query.filter_by(id=getattr(plan, 'entrenador_id', None)).first()
+                            entrenador = _safe_entrenador_by_id(getattr(plan, 'entrenador_id', None))
                             if entrenador and entrenador.usuario_id == token_user_id:
                                 allowed = True
                         except Exception:
@@ -1684,9 +1737,16 @@ def obtener_plan_publico(plan_id):
 
         entrenador_nombre = None
         try:
-            ent = Entrenador.query.filter_by(id=plan.entrenador_id).first()
-            if ent and getattr(ent, 'usuario', None):
-                entrenador_nombre = ent.usuario.nombre
+            ent = _safe_entrenador_by_id(plan.entrenador_id)
+            if ent:
+                # Query Usuario.nombre directly to avoid touching Entrenador relationship
+                from database.database import Usuario
+                try:
+                    urow = db.session.execute(text('SELECT nombre FROM usuarios WHERE id = :uid'), {'uid': ent.usuario_id}).fetchone()
+                    if urow:
+                        entrenador_nombre = urow['nombre'] if 'nombre' in getattr(urow, 'keys', lambda: [])() else (urow[0] if len(urow) > 0 else None)
+                except Exception:
+                    entrenador_nombre = None
         except Exception:
             entrenador_nombre = None
 
@@ -1708,7 +1768,7 @@ def listar_planes_mis():
         return jsonify({'error': 'authentication required'}), 401
 
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
 
@@ -1742,7 +1802,7 @@ def actualizar_plan(plan_id):
         return jsonify({'error': 'authentication required'}), 401
 
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
     if not entrenador:
@@ -1784,7 +1844,7 @@ def eliminar_plan(plan_id):
         return jsonify({'error': 'authentication required'}), 401
 
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
     if not entrenador:
@@ -1905,7 +1965,7 @@ def actualizar_rutina(rutina_id):
         return jsonify({'error': 'rutina not found'}), 404
 
     # verificar que el token user_id corresponde al usuario del entrenador propietario
-    entrenador = Entrenador.query.filter_by(id=rutina.entrenador_id).first()
+    entrenador = _safe_entrenador_by_id(rutina.entrenador_id)
     if not entrenador or entrenador.usuario_id != header_user_id:
         return jsonify({'error': 'forbidden: cannot modify this rutina'}), 403
 
@@ -1961,7 +2021,7 @@ def eliminar_rutina(rutina_id):
     if not rutina:
         return jsonify({'error': 'rutina not found'}), 404
 
-    entrenador = Entrenador.query.filter_by(id=rutina.entrenador_id).first()
+    entrenador = _safe_entrenador_by_id(rutina.entrenador_id)
     if not entrenador or entrenador.usuario_id != header_user_id:
         return jsonify({'error': 'forbidden: cannot delete this rutina'}), 403
 
@@ -2117,16 +2177,28 @@ def admin_entrenadores_aceptados():
         return jsonify({'error': 'forbidden: admin only'}), 403
 
     try:
-        from database.database import Entrenador, Rutina, PlanAlimenticio, SolicitudPlan, Cliente, Usuario
+        from database.database import Rutina, PlanAlimenticio, SolicitudPlan, Cliente, Usuario
         result = []
-        entrenadores = Entrenador.query.all()
-        for ent in entrenadores:
-            ent_obj = {'entrenador_id': ent.id, 'usuario_id': getattr(ent, 'usuario_id', None), 'nombre': None, 'rutinas': [], 'planes': []}
+        # Avoid selecting all columns from entrenadores (some deployments miss columns).
+        try:
+            rows = db.session.execute(text('SELECT id, usuario_id FROM entrenadores')).fetchall()
+        except Exception:
+            rows = []
+        for rw in rows:
             try:
-                if getattr(ent, 'usuario', None):
-                    ent_obj['nombre'] = getattr(ent.usuario, 'nombre', None)
+                keys = getattr(rw, 'keys', lambda: [])()
+                ent_id = rw['id'] if 'id' in keys else rw[0]
+                usuario_id = rw['usuario_id'] if 'usuario_id' in keys else (rw[1] if len(rw) > 1 else None)
+                ent_obj = {'entrenador_id': ent_id, 'usuario_id': usuario_id, 'nombre': None, 'rutinas': [], 'planes': []}
+                try:
+                    if usuario_id:
+                        u = Usuario.query.filter_by(id=usuario_id).first()
+                        if u:
+                            ent_obj['nombre'] = getattr(u, 'nombre', None)
+                except Exception:
+                    ent_obj['nombre'] = None
             except Exception:
-                ent_obj['nombre'] = None
+                continue
 
             # Rutinas
             try:
@@ -2220,7 +2292,7 @@ def admin_promote_usuario(usuario_id):
         user = Usuario.query.filter_by(id=usuario_id).first()
         if not user:
             return jsonify({'error': 'user not found'}), 404
-        existing = Entrenador.query.filter_by(usuario_id=user.id).first()
+        existing = _safe_entrenador_by_usuario_id(user.id)
         if existing:
             return jsonify({'message': 'already entrenador', 'entrenador_id': existing.id}), 200
         entrenador = Entrenador(usuario_id=user.id)
@@ -2252,7 +2324,7 @@ def admin_delete_usuario(usuario_id):
         if mode == 'hard':
             try:
                 # delete entrenador-owned content if exists
-                entrenador = Entrenador.query.filter_by(usuario_id=user.id).first()
+                entrenador = _safe_entrenador_by_usuario_id(user.id)
                 if entrenador:
                     # delete solicitudes referencing plans or rutinas owned by this entrenador
                     try:
@@ -2277,7 +2349,7 @@ def admin_delete_usuario(usuario_id):
                         db.session.rollback()
                     # delete entrenador row
                     try:
-                        Entrenador.query.filter_by(usuario_id=user.id).delete()
+                        db.session.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
                     except Exception:
                         db.session.rollback()
 
@@ -2300,7 +2372,7 @@ def admin_delete_usuario(usuario_id):
         try:
             user.activo = False
             # Unpublish entrenador content if present
-            entrenador = Entrenador.query.filter_by(usuario_id=user.id).first()
+            entrenador = _safe_entrenador_by_usuario_id(user.id)
             if entrenador:
                 try:
                     Rutina.query.filter_by(entrenador_id=entrenador.id).update({'es_publica': False})
@@ -2419,7 +2491,7 @@ def admin_set_user_role(usuario_id):
 
         # Switch behaviour
         if desired == 'entrenador':
-            existing = Entrenador.query.filter_by(usuario_id=user.id).first()
+            existing = _safe_entrenador_by_usuario_id(user.id)
             if existing:
                 return jsonify({'message': 'already entrenador'}), 200
             # create entrenador row
@@ -2445,9 +2517,9 @@ def admin_set_user_role(usuario_id):
                     db.session.rollback()
                     app.logger.exception('admin_set_user_role: failed creating cliente')
                     return jsonify({'error': 'db error', 'detail': str(e)}), 500
-            # remove entrenador if exists
+            # remove entrenador if exists (raw DELETE to avoid ORM selecting all columns)
             try:
-                Entrenador.query.filter_by(usuario_id=user.id).delete()
+                db.session.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
                 db.session.commit()
             except Exception:
                 db.session.rollback()
@@ -2456,7 +2528,7 @@ def admin_set_user_role(usuario_id):
         if desired == 'usuario':
             # remove both relations
             try:
-                Entrenador.query.filter_by(usuario_id=user.id).delete()
+                db.session.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
                 Cliente.query.filter_by(usuario_id=user.id).delete()
                 db.session.commit()
                 return jsonify({'message': 'usuario convertido a usuario simple (sin roles)'}), 200
@@ -2479,7 +2551,7 @@ def entrenador_aceptados():
         return jsonify({'error': 'authentication required'}), 401
 
     try:
-        entrenador = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        entrenador = _safe_entrenador_by_usuario_id(token_user_id)
     except Exception:
         entrenador = None
     if not entrenador:
@@ -2568,7 +2640,7 @@ def obtener_usuario_perfil(usuario_id):
 
         # determine roles
         is_admin = (user.email == os.getenv('ADMIN_EMAIL', 'admin@test.local'))
-        has_entrenador = True if Entrenador.query.filter_by(usuario_id=user.id).first() else False
+        has_entrenador = True if _safe_entrenador_by_usuario_id(user.id) else False
         has_cliente = True if Cliente.query.filter_by(usuario_id=user.id).first() else False
 
         perfil = {
@@ -2588,8 +2660,16 @@ def obtener_usuario_perfil(usuario_id):
 
         # include entrenador details (if any)
         if has_entrenador:
-            ent = Entrenador.query.filter_by(usuario_id=user.id).first()
-            perfil['entrenador'] = {'id': ent.id, 'speciality': getattr(ent, 'speciality', None)}
+            ent = _safe_entrenador_by_usuario_id(user.id)
+            # attempt to read speciality via a minimal raw select (may be NULL/missing)
+            speciality = None
+            try:
+                srow = db.session.execute(text('SELECT speciality FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id}).fetchone()
+                if srow:
+                    speciality = srow['speciality'] if 'speciality' in getattr(srow, 'keys', lambda: [])() else (srow[0] if len(srow) > 0 else None)
+            except Exception:
+                speciality = None
+            perfil['entrenador'] = {'id': ent.id, 'speciality': speciality}
             # include simple list of rutinas
             try:
                 rutinas = Rutina.query.filter_by(entrenador_id=ent.id).order_by(Rutina.creado_en.desc()).limit(20).all()
@@ -2637,20 +2717,36 @@ def get_entrenador_perfil():
     if not token_user_id:
         return jsonify({'error': 'authentication required'}), 401
     try:
-        from database.database import Entrenador, Usuario
-        ent = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        from database.database import Usuario
+        # Use safe minimal entrenador lookup to avoid selecting missing columns
+        ent = _safe_entrenador_by_usuario_id(token_user_id)
         if not ent:
             return jsonify({'error': 'entrenador not found'}), 404
         user = Usuario.query.filter_by(id=token_user_id).first()
+        # Try to fetch trainer fields via a minimal raw select; be tolerant of missing columns
+        speciality = bio = telefono = instagram_url = youtube_url = None
+        try:
+            row = db.session.execute(text('SELECT speciality, bio, telefono, instagram_url, youtube_url FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': token_user_id}).fetchone()
+            if row:
+                keys = getattr(row, 'keys', lambda: [])()
+                speciality = row['speciality'] if 'speciality' in keys else (row[0] if len(row) > 0 else None)
+                bio = row['bio'] if 'bio' in keys else (row[1] if len(row) > 1 else None)
+                telefono = row['telefono'] if 'telefono' in keys else (row[2] if len(row) > 2 else None)
+                instagram_url = row['instagram_url'] if 'instagram_url' in keys else (row[3] if len(row) > 3 else None)
+                youtube_url = row['youtube_url'] if 'youtube_url' in keys else (row[4] if len(row) > 4 else None)
+        except Exception:
+            # If the wide select fails (schema drift), silently ignore and return minimal profile
+            pass
+
         perfil = {
             'usuario_id': token_user_id,
             'nombre': getattr(user, 'nombre', None),
             'email': getattr(user, 'email', None),
-            'speciality': getattr(ent, 'speciality', None),
-            'bio': getattr(ent, 'bio', None),
-            'telefono': getattr(ent, 'telefono', None),
-            'instagram_url': getattr(ent, 'instagram_url', None),
-            'youtube_url': getattr(ent, 'youtube_url', None),
+            'speciality': speciality,
+            'bio': bio,
+            'telefono': telefono,
+            'instagram_url': instagram_url,
+            'youtube_url': youtube_url,
             'id': ent.id
         }
         return jsonify(perfil), 200
@@ -2667,24 +2763,49 @@ def update_entrenador_perfil():
         return jsonify({'error': 'authentication required'}), 401
     data = request.get_json() or {}
     try:
-        from database.database import Entrenador
-        ent = Entrenador.query.filter_by(usuario_id=token_user_id).first()
+        # Use raw SQL updates so we don't trigger ORM to select all Entrenador columns
+        ent = _safe_entrenador_by_usuario_id(token_user_id)
         if not ent:
             return jsonify({'error': 'entrenador not found'}), 404
-        # Accept fields: speciality, bio, telefono
+
+        # Apply updates per-column in separate statements to tolerate missing columns.
+        updated = False
         if 'speciality' in data:
-            ent.speciality = data.get('speciality')
+            try:
+                db.session.execute(text('UPDATE entrenadores SET speciality = :val WHERE usuario_id = :uid'), {'val': data.get('speciality'), 'uid': token_user_id})
+                updated = True
+            except Exception:
+                db.session.rollback()
         if 'bio' in data:
-            ent.bio = data.get('bio')
+            try:
+                db.session.execute(text('UPDATE entrenadores SET bio = :val WHERE usuario_id = :uid'), {'val': data.get('bio'), 'uid': token_user_id})
+                updated = True
+            except Exception:
+                db.session.rollback()
         if 'telefono' in data:
-            ent.telefono = data.get('telefono')
+            try:
+                db.session.execute(text('UPDATE entrenadores SET telefono = :val WHERE usuario_id = :uid'), {'val': data.get('telefono'), 'uid': token_user_id})
+                updated = True
+            except Exception:
+                db.session.rollback()
         if 'instagram_url' in data:
-            # Basic acceptance of instagram url (no validation here)
-            ent.instagram_url = data.get('instagram_url')
+            try:
+                db.session.execute(text('UPDATE entrenadores SET instagram_url = :val WHERE usuario_id = :uid'), {'val': data.get('instagram_url'), 'uid': token_user_id})
+                updated = True
+            except Exception:
+                db.session.rollback()
         if 'youtube_url' in data:
-            ent.youtube_url = data.get('youtube_url')
-        db.session.add(ent)
-        db.session.commit()
+            try:
+                db.session.execute(text('UPDATE entrenadores SET youtube_url = :val WHERE usuario_id = :uid'), {'val': data.get('youtube_url'), 'uid': token_user_id})
+                updated = True
+            except Exception:
+                db.session.rollback()
+
+        if updated:
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
         return jsonify({'message': 'perfil actualizado'}), 200
     except Exception as e:
         db.session.rollback()
@@ -2698,26 +2819,38 @@ def listar_entrenadores_publicos():
     una fila Entrenador y cuyo Usuario.activo != False.
     """
     try:
-        from database.database import Entrenador, Usuario
+        from database.database import Usuario
         trainers = []
+        # Try a wide select first (may fail if some columns missing like `bio`),
+        # fallback to a minimal select of id and usuario_id.
         try:
-            ents = Entrenador.query.order_by(Entrenador.id.desc()).all()
+            rows = db.session.execute(text('SELECT id, usuario_id, speciality, telefono, instagram_url, youtube_url, bio FROM entrenadores ORDER BY id DESC')).fetchall()
         except Exception:
-            ents = []
-
-        for ent in ents:
             try:
-                user = Usuario.query.filter_by(id=getattr(ent, 'usuario_id', None)).first()
-                if not user:
-                    continue
-                if getattr(user, 'activo', True) is False:
-                    continue
-                trainers.append({'usuario_id': user.id, 'nombre': getattr(user, 'nombre', None), 'speciality': getattr(ent, 'speciality', None), 'bio': getattr(ent, 'bio', None), 'telefono': getattr(ent, 'telefono', None), 'instagram_url': getattr(ent, 'instagram_url', None), 'youtube_url': getattr(ent, 'youtube_url', None), 'entrenador_id': ent.id})
+                rows = db.session.execute(text('SELECT id, usuario_id FROM entrenadores ORDER BY id DESC')).fetchall()
             except Exception:
-                # skip malformed rows
+                rows = []
+
+        for rw in rows:
+            try:
+                keys = getattr(rw, 'keys', lambda: [])()
+                ent_id = rw['id'] if 'id' in keys else rw[0]
+                usuario_id = rw['usuario_id'] if 'usuario_id' in keys else (rw[1] if len(rw) > 1 else None)
+                # optional fields (may not exist in the minimal fallback)
+                speciality = rw['speciality'] if 'speciality' in keys else (rw[2] if len(rw) > 2 else None) if len(rw) > 2 else None
+                bio = rw['bio'] if 'bio' in keys else (rw[6] if len(rw) > 6 else None) if len(rw) > 6 else None
+                telefono = rw['telefono'] if 'telefono' in keys else (rw[3] if len(rw) > 3 else None) if len(rw) > 3 else None
+                instagram_url = rw['instagram_url'] if 'instagram_url' in keys else (rw[4] if len(rw) > 4 else None) if len(rw) > 4 else None
+                youtube_url = rw['youtube_url'] if 'youtube_url' in keys else (rw[5] if len(rw) > 5 else None) if len(rw) > 5 else None
+
+                user = Usuario.query.filter_by(id=usuario_id).first()
+                if not user or getattr(user, 'activo', True) is False:
+                    continue
+                trainers.append({'usuario_id': user.id, 'nombre': getattr(user, 'nombre', None), 'speciality': speciality, 'bio': bio, 'telefono': telefono, 'instagram_url': instagram_url, 'youtube_url': youtube_url, 'entrenador_id': ent_id})
+            except Exception:
                 continue
 
-        return jsonify(trainers), 200
+        return jsonify(trainers), 0 or 200
     except Exception as e:
         # Don't break the client UI: log the error but return an empty list so
         # the client can still render the page. This favors availability for
@@ -2741,22 +2874,35 @@ def public_list_entrenadores():
     if request.method == 'OPTIONS':
         return ('', 200)
     try:
-        from database.database import Entrenador, Usuario
+        from database.database import Usuario
         trainers = []
-        try:
-            ents = Entrenador.query.order_by(Entrenador.id.desc()).all()
-        except Exception:
-            ents = []
         ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
-        for ent in ents:
+        try:
+            rows = db.session.execute(text('SELECT id, usuario_id, speciality, telefono, instagram_url, youtube_url, bio FROM entrenadores ORDER BY id DESC')).fetchall()
+        except Exception:
             try:
-                user = Usuario.query.filter_by(id=getattr(ent, 'usuario_id', None)).first()
+                rows = db.session.execute(text('SELECT id, usuario_id FROM entrenadores ORDER BY id DESC')).fetchall()
+            except Exception:
+                rows = []
+
+        for rw in rows:
+            try:
+                keys = getattr(rw, 'keys', lambda: [])()
+                ent_id = rw['id'] if 'id' in keys else rw[0]
+                usuario_id = rw['usuario_id'] if 'usuario_id' in keys else (rw[1] if len(rw) > 1 else None)
+                speciality = rw['speciality'] if 'speciality' in keys else (rw[2] if len(rw) > 2 else None) if len(rw) > 2 else None
+                bio = rw['bio'] if 'bio' in keys else (rw[6] if len(rw) > 6 else None) if len(rw) > 6 else None
+                telefono = rw['telefono'] if 'telefono' in keys else (rw[3] if len(rw) > 3 else None) if len(rw) > 3 else None
+                instagram_url = rw['instagram_url'] if 'instagram_url' in keys else (rw[4] if len(rw) > 4 else None) if len(rw) > 4 else None
+                youtube_url = rw['youtube_url'] if 'youtube_url' in keys else (rw[5] if len(rw) > 5 else None) if len(rw) > 5 else None
+
+                user = Usuario.query.filter_by(id=usuario_id).first()
                 if not user or getattr(user, 'activo', True) is False:
                     continue
                 # Exclude the configured admin account from public trainer listings
                 if getattr(user, 'email', None) and getattr(user, 'email') == ADMIN_EMAIL:
                     continue
-                trainers.append({'usuario_id': user.id, 'nombre': getattr(user, 'nombre', None), 'speciality': getattr(ent, 'speciality', None), 'bio': getattr(ent, 'bio', None), 'telefono': getattr(ent, 'telefono', None), 'instagram_url': getattr(ent, 'instagram_url', None), 'youtube_url': getattr(ent, 'youtube_url', None)})
+                trainers.append({'usuario_id': user.id, 'nombre': getattr(user, 'nombre', None), 'speciality': speciality, 'bio': bio, 'telefono': telefono, 'instagram_url': instagram_url, 'youtube_url': youtube_url})
             except Exception:
                 continue
         return jsonify(trainers), 200
@@ -2782,20 +2928,34 @@ def public_get_entrenador(usuario_id):
         user = Usuario.query.filter_by(id=usuario_id).first()
         if not user:
             return jsonify({'error': 'not found'}), 404
-        ent = Entrenador.query.filter_by(usuario_id=user.id).first()
+        ent = _safe_entrenador_by_usuario_id(user.id)
         if not ent:
             return jsonify({'error': 'not found'}), 404
         if getattr(user, 'activo', True) is False:
             return jsonify({'error': 'not found'}), 404
+        # fetch optional entrenador fields via raw select to avoid missing-column errors
+        speciality = bio = instagram_url = youtube_url = telefono = None
+        try:
+            row = db.session.execute(text('SELECT speciality, bio, instagram_url, youtube_url, telefono FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+            if row:
+                keys = getattr(row, 'keys', lambda: [])()
+                speciality = row['speciality'] if 'speciality' in keys else (row[0] if len(row) > 0 else None)
+                bio = row['bio'] if 'bio' in keys else (row[1] if len(row) > 1 else None)
+                instagram_url = row['instagram_url'] if 'instagram_url' in keys else (row[2] if len(row) > 2 else None)
+                youtube_url = row['youtube_url'] if 'youtube_url' in keys else (row[3] if len(row) > 3 else None)
+                telefono = row['telefono'] if 'telefono' in keys else (row[4] if len(row) > 4 else None)
+        except Exception:
+            pass
         perfil = {
             'usuario_id': user.id,
             'nombre': user.nombre,
             'email': getattr(user, 'email', None),
-            'speciality': getattr(ent, 'speciality', None),
-            'bio': getattr(ent, 'bio', None),
-            'instagram_url': getattr(ent, 'instagram_url', None),
-            'youtube_url': getattr(ent, 'youtube_url', None),
-            'telefono': getattr(ent, 'telefono', None),
+            'speciality': speciality,
+            'bio': bio,
+            'instagram_url': instagram_url,
+            'youtube_url': youtube_url,
+            'telefono': telefono,
+            'entrenador_id': ent.id,
             'rutinas': [],
             'planes': []
         }
@@ -2833,22 +2993,36 @@ def obtener_entrenador_publico(usuario_id):
         if not user:
             return jsonify({'error': 'user not found'}), 404
         # must be an entrenador
-        ent = Entrenador.query.filter_by(usuario_id=user.id).first()
+        ent = _safe_entrenador_by_usuario_id(user.id)
         if not ent:
             return jsonify({'error': 'entrenador not found'}), 404
         # if user deactivated, respond 404 to hide profile
         if getattr(user, 'activo', True) is False:
             return jsonify({'error': 'entrenador not found'}), 404
 
+        # fetch optional entrenador fields via raw select to avoid missing-column errors
+        speciality = bio = instagram_url = youtube_url = telefono = None
+        try:
+            row = db.session.execute(text('SELECT speciality, bio, instagram_url, youtube_url, telefono FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+            if row:
+                keys = getattr(row, 'keys', lambda: [])()
+                speciality = row['speciality'] if 'speciality' in keys else (row[0] if len(row) > 0 else None)
+                bio = row['bio'] if 'bio' in keys else (row[1] if len(row) > 1 else None)
+                instagram_url = row['instagram_url'] if 'instagram_url' in keys else (row[2] if len(row) > 2 else None)
+                youtube_url = row['youtube_url'] if 'youtube_url' in keys else (row[3] if len(row) > 3 else None)
+                telefono = row['telefono'] if 'telefono' in keys else (row[4] if len(row) > 4 else None)
+        except Exception:
+            pass
+
         perfil = {
             'usuario_id': user.id,
             'nombre': user.nombre,
             'email': getattr(user, 'email', None),
-            'speciality': getattr(ent, 'speciality', None),
-            'bio': getattr(ent, 'bio', None),
-            'instagram_url': getattr(ent, 'instagram_url', None),
-            'youtube_url': getattr(ent, 'youtube_url', None),
-            'telefono': getattr(ent, 'telefono', None),
+            'speciality': speciality,
+            'bio': bio,
+            'instagram_url': instagram_url,
+            'youtube_url': youtube_url,
+            'telefono': telefono,
             'entrenador_id': ent.id,
             'rutinas': [],
             'planes': []
@@ -2971,7 +3145,7 @@ def admin_review_list():
 
             rlist = []
             for r in rutinas:
-                entrenador = Entrenador.query.filter_by(id=getattr(r, 'entrenador_id', None)).first()
+                entrenador = _safe_entrenador_by_id(getattr(r, 'entrenador_id', None))
                 entrenador_usuario_id = getattr(entrenador, 'usuario_id', None) if entrenador else None
                 entrenador_nombre = None
                 try:
@@ -2985,7 +3159,7 @@ def admin_review_list():
 
             plist = []
             for p in planes:
-                entrenador = Entrenador.query.filter_by(id=getattr(p, 'entrenador_id', None)).first()
+                entrenador = _safe_entrenador_by_id(getattr(p, 'entrenador_id', None))
                 entrenador_usuario_id = getattr(entrenador, 'usuario_id', None) if entrenador else None
                 entrenador_nombre = None
                 try:
@@ -3019,7 +3193,7 @@ def admin_review_list_debug():
             planes = PlanAlimenticio.query.filter_by(es_publico=False).order_by(PlanAlimenticio.creado_en.desc()).all()
             rlist = []
             for r in rutinas:
-                entrenador = Entrenador.query.filter_by(id=getattr(r, 'entrenador_id', None)).first()
+                entrenador = _safe_entrenador_by_id(getattr(r, 'entrenador_id', None))
                 entrenador_usuario_id = getattr(entrenador, 'usuario_id', None) if entrenador else None
                 entrenador_nombre = None
                 try:
@@ -3033,7 +3207,7 @@ def admin_review_list_debug():
 
             plist = []
             for p in planes:
-                entrenador = Entrenador.query.filter_by(id=getattr(p, 'entrenador_id', None)).first()
+                entrenador = _safe_entrenador_by_id(getattr(p, 'entrenador_id', None))
                 entrenador_usuario_id = getattr(entrenador, 'usuario_id', None) if entrenador else None
                 entrenador_nombre = None
                 try:
@@ -3552,7 +3726,7 @@ def dev_promote_entrenador():
             return jsonify({'error': 'user not found'}), 404
 
         # Si ya tiene entrenador, devolvemos 200 con info
-        existing = Entrenador.query.filter_by(usuario_id=user.id).first()
+        existing = _safe_entrenador_by_usuario_id(user.id)
         if existing:
             return jsonify({'message': 'already entrenador', 'entrenador_id': existing.id}), 200
 
