@@ -228,74 +228,97 @@ def register_usuario():
 
 @app.route('/api/usuarios/login', methods=['POST'])
 def login_usuario():
-    data = request.get_json() or {}
-    email = data.get('email')
-    password = data.get('password')
-    if not email or not password:
-        return jsonify({'error': 'email and password required'}), 400
-
-    user = Usuario.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({'error': 'invalid credentials'}), 401
-
-    # Check lockout state
     try:
-        from datetime import datetime as _dt
-        if getattr(user, 'locked_until', None) and user.locked_until > _dt.utcnow():
-            return jsonify({'error': 'account locked', 'locked_until': user.locked_until.isoformat()}), 403
-    except Exception:
-        pass
+        data = request.get_json() or {}
+        email = data.get('email')
+        password = data.get('password')
+        if not email or not password:
+            return jsonify({'error': 'email and password required'}), 400
 
-    if not check_password_hash(user.hashed_password, password):
-        # increment failed attempts and possibly lock account
+        user = Usuario.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({'error': 'invalid credentials'}), 401
+
+        # Check lockout state
         try:
-            user.failed_attempts = (getattr(user, 'failed_attempts', 0) or 0) + 1
-            # lock after 3 failed attempts
-            if user.failed_attempts >= 3:
-                from datetime import datetime as _dt, timedelta as _td
-                lock_minutes = int(os.getenv('ACCOUNT_LOCK_MINUTES', '15'))
-                user.locked_until = _dt.utcnow() + _td(minutes=lock_minutes)
+            from datetime import datetime as _dt
+            if getattr(user, 'locked_until', None) and user.locked_until > _dt.utcnow():
+                return jsonify({'error': 'account locked', 'locked_until': user.locked_until.isoformat()}), 403
+        except Exception:
+            pass
+
+        if not check_password_hash(user.hashed_password, password):
+            # increment failed attempts and possibly lock account
+            try:
+                user.failed_attempts = (getattr(user, 'failed_attempts', 0) or 0) + 1
+                # lock after 3 failed attempts
+                if user.failed_attempts >= 3:
+                    from datetime import datetime as _dt, timedelta as _td
+                    lock_minutes = int(os.getenv('ACCOUNT_LOCK_MINUTES', '15'))
+                    user.locked_until = _dt.utcnow() + _td(minutes=lock_minutes)
+                db.session.add(user)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+            return jsonify({'error': 'invalid credentials'}), 401
+
+        # Determina rol según relaciones (Cliente / Entrenador)
+        ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
+        if user.email == ADMIN_EMAIL:
+            role = 'admin'
+        else:
+            role = 'usuario'
+            try:
+                row = db.session.execute(text('SELECT 1 FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+                if row:
+                    role = 'entrenador'
+                else:
+                    row2 = db.session.execute(text('SELECT 1 FROM clientes WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+                    if row2:
+                        role = 'cliente'
+            except Exception:
+                role = getattr(user, '_role_fallback', 'usuario')
+
+        # Reset failed attempts on successful login
+        try:
+            user.failed_attempts = 0
+            user.locked_until = None
             db.session.add(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
-        return jsonify({'error': 'invalid credentials'}), 401
 
-    # Determina rol según relaciones (Cliente / Entrenador)
-    # Prioridad: si el usuario es el ADMIN (según variable de entorno)
-    ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
-    if user.email == ADMIN_EMAIL:
-        role = 'admin'
-    else:
-        role = 'usuario'
-        # Avoid lazy-loading relationship attributes which can trigger
-        # queries referencing missing columns on related tables (e.g. entrenadores.bio).
-        # Instead, check existence using minimal SQL that only selects usuario_id.
-        try:
-            row = db.session.execute(text('SELECT 1 FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
-            if row:
-                role = 'entrenador'
-            else:
-                row2 = db.session.execute(text('SELECT 1 FROM clientes WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
-                if row2:
-                    role = 'cliente'
-        except Exception:
-            # If any DB error occurs, fall back to 'usuario' to avoid blocking login.
-            role = getattr(user, '_role_fallback', 'usuario')
-
-    # Reset failed attempts on successful login
-    try:
-        user.failed_attempts = 0
-        user.locked_until = None
-        db.session.add(user)
-        db.session.commit()
+        # Generar token JWT con user info (incluye jti desde backend.auth)
+        token = generate_token({'user_id': user.id, 'role': role, 'nombre': user.nombre})
+        return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre, 'token': token}), 200
     except Exception:
-        db.session.rollback()
-
-    # Generar token JWT con user info (incluye jti desde backend.auth)
-    token = generate_token({'user_id': user.id, 'role': role, 'nombre': user.nombre})
-    # Devuelve role, nombre y token
-    return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre, 'token': token}), 200
+        # Persist traceback to a file so we can inspect the exact error on the deployed server
+        try:
+            logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+            os.makedirs(logs_dir, exist_ok=True)
+            with open(os.path.join(logs_dir, 'login_error.log'), 'a', encoding='utf-8') as fh:
+                fh.write('----\n')
+                fh.write(f'TIME: {datetime.utcnow().isoformat()}\n')
+                fh.write(f'PATH: {getattr(request, "path", None)}\n')
+                fh.write('REQUEST_BODY:\n')
+                try:
+                    fh.write(repr(request.get_json() if request.is_json else request.data) + '\n')
+                except Exception:
+                    pass
+                fh.write('TRACEBACK:\n')
+                import traceback as _tb
+                fh.write(_tb.format_exc())
+                fh.write('\n')
+        except Exception:
+            # best-effort: avoid raising from logging
+            pass
+        app.logger.exception('login_usuario: unexpected exception')
+        is_prod = bool(os.getenv('DATABASE_URL'))
+        if is_prod:
+            return jsonify({'error': 'internal server error'}), 500
+        else:
+            import traceback as _tb
+            return jsonify({'error': 'internal', 'detail': _tb.format_exc()}), 500
 
 
 # --- Lógica de Conexión (el cambio clave) ---
