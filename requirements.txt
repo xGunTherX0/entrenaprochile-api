@@ -5,3 +5,4 @@ PyJWT>=2.8.0
 gunicorn>=20.1.0
 Flask-Cors>=3.0.10
 pytest>=7.0.0
+requests>=2.31.0

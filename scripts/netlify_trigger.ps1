@@ -1,4 +1,8 @@
-$env:NETLIFY_AUTH_TOKEN = 'nfp_HCdcdwPgeXzDQgj8xumr6SA6Zhun6qRC9aa7'
+if (-not $env:NETLIFY_AUTH_TOKEN) {
+    Write-Error "NETLIFY_AUTH_TOKEN environment variable not set. Set it in your shell or in CI secrets before running this script."
+    exit 1
+}
+
 Try {
     $sites = Invoke-RestMethod -Uri 'https://api.netlify.com/api/v1/sites' -Headers @{ Authorization = "Bearer $env:NETLIFY_AUTH_TOKEN" }
     $sites | Select-Object name,id,ssl_url | ConvertTo-Json -Depth 4 | Out-File -Encoding utf8 .\scripts\netlify_sites.json
