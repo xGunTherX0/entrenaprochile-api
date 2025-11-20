@@ -662,20 +662,62 @@ def crear_rutina():
         try:
             db.session.commit()
         except Exception as e:
-            # If commit fails, rollback and attempt to persist rutina alone
             app.logger.exception('crear_rutina: commit failed, attempting resilient save')
+            # Ensure session is clean before any repair attempts
             try:
                 db.session.rollback()
             except Exception:
                 pass
-            # Fallback: try to save rutina in a new session scope
-            try:
-                with app.app_context():
+
+            err_str = str(e)
+            # If the error indicates missing columns, attempt idempotent ALTER TABLEs for rutinas
+            if 'UndefinedColumn' in err_str or ('column' in err_str and 'does not exist' in err_str) or 'seccion_descripcion' in err_str:
+                app.logger.info('crear_rutina: detected missing rutinas column(s), attempting lightweight repair')
+                try:
+                    with app.app_context():
+                        alter_stmts = [
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS seccion_descripcion TEXT",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS objetivo_principal TEXT",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS enfoque_rutina TEXT",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS cualidades_clave TEXT",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS duracion_frecuencia VARCHAR(255)",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS material_requerido TEXT",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS instrucciones_estructurales TEXT",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS link_url VARCHAR(1024)",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS nivel VARCHAR(50)",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS es_publica BOOLEAN DEFAULT FALSE",
+                            "ALTER TABLE rutinas ADD COLUMN IF NOT EXISTS creado_en TIMESTAMP"
+                        ]
+                        for s in alter_stmts:
+                            try:
+                                db.session.execute(text(s))
+                            except Exception:
+                                app.logger.debug('crear_rutina: non-fatal ALTER failed: %s', s)
+                        try:
+                            db.session.commit()
+                        except Exception:
+                            db.session.rollback()
+                except Exception:
+                    app.logger.exception('crear_rutina: schema repair attempt failed')
+
+                # After repair attempt, try the insert again in a fresh transaction
+                try:
                     db.session.add(rutina)
                     db.session.commit()
-            except Exception:
-                db.session.rollback()
-                app.logger.exception('crear_rutina: final commit failed')
+                except Exception as e2:
+                    app.logger.exception('crear_rutina: retry after schema repair failed')
+                    try:
+                        db.session.rollback()
+                    except Exception:
+                        pass
+                    
+                    return jsonify({'error': 'db error', 'detail': str(e2)}), 500
+            else:
+                # Non-schema related commit failure: return 500 after rollback and logging
+                try:
+                    db.session.rollback()
+                except Exception:
+                    pass
                 try:
                     logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
                     os.makedirs(logs_dir, exist_ok=True)
@@ -749,6 +791,14 @@ def listar_rutinas(entrenador_usuario_id):
                             'entrenador_id': 'INTEGER',
                             'nombre': 'VARCHAR(200)',
                             'descripcion': 'TEXT',
+                            'seccion_descripcion': 'TEXT',
+                            'objetivo_principal': 'TEXT',
+                            'enfoque_rutina': 'TEXT',
+                            'cualidades_clave': 'TEXT',
+                            'duracion_frecuencia': 'VARCHAR(255)',
+                            'material_requerido': 'TEXT',
+                            'instrucciones_estructurales': 'TEXT',
+                            'link_url': 'VARCHAR(1024)',
                             'nivel': 'VARCHAR(50)',
                             'es_publica': 'BOOLEAN',
                             'creado_en': 'TIMESTAMP'
@@ -2323,46 +2373,80 @@ def admin_delete_usuario(usuario_id):
         # Hard delete: remove user and all owned content
         if mode == 'hard':
             try:
-                # delete entrenador-owned content if exists
+                # Use explicit raw DELETE statements in a safe order to avoid
+                # SQLAlchemy ORM emitting UPDATEs that set FKs to NULL.
+                # Order: remove solicitudes_plan referencing this entrenador's
+                # plans/rutinas, remove cliente_rutina entries, remove plans
+                # and rutinas, remove trainer and client rows, then remove user.
                 entrenador = _safe_entrenador_by_usuario_id(user.id)
+
+                # If entrenador exists, remove related content using raw SQL
                 if entrenador:
-                    # delete solicitudes referencing plans or rutinas owned by this entrenador
+                    ent_id = entrenador.id
+                    # collect plan and rutina ids (use raw selects to be tolerant)
                     try:
-                        # delete solicitudes referencing plans
-                        plan_ids = [p.id for p in PlanAlimenticio.query.filter_by(entrenador_id=entrenador.id).all()]
+                        plan_rows = db.session.execute(text('SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id}).fetchall()
+                        plan_ids = [r[0] for r in plan_rows] if plan_rows else []
+                    except Exception:
+                        plan_ids = []
+                    try:
+                        rutina_rows = db.session.execute(text('SELECT id FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id}).fetchall()
+                        rutina_ids = [r[0] for r in rutina_rows] if rutina_rows else []
+                    except Exception:
+                        rutina_ids = []
+
+                    # delete solicitudes referencing plans and rutinas
+                    try:
                         if plan_ids:
-                            SolicitudPlan.query.filter(SolicitudPlan.plan_id.in_(plan_ids)).delete(synchronize_session=False)
-                    except Exception:
-                        db.session.rollback()
-                    try:
-                        # delete solicitudes referencing rutinas
-                        rutina_ids = [r.id for r in Rutina.query.filter_by(entrenador_id=entrenador.id).all()]
+                            db.session.execute(text('DELETE FROM solicitudes_plan WHERE plan_id = ANY(:pids)'), {'pids': plan_ids})
                         if rutina_ids:
-                            SolicitudPlan.query.filter(SolicitudPlan.rutina_id.in_(rutina_ids)).delete(synchronize_session=False)
+                            db.session.execute(text('DELETE FROM solicitudes_plan WHERE rutina_id = ANY(:rids)'), {'rids': rutina_ids})
                     except Exception:
                         db.session.rollback()
-                    # delete planes and rutinas
+
+                    # delete any cliente_rutina mappings for these rutinas
                     try:
-                        PlanAlimenticio.query.filter_by(entrenador_id=entrenador.id).delete()
-                        Rutina.query.filter_by(entrenador_id=entrenador.id).delete()
+                        if rutina_ids:
+                            db.session.execute(text('DELETE FROM cliente_rutina WHERE rutina_id = ANY(:rids)'), {'rids': rutina_ids})
                     except Exception:
                         db.session.rollback()
+
+                    # delete content rows (plans and rutinas)
+                    try:
+                        db.session.execute(text('DELETE FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id})
+                        db.session.execute(text('DELETE FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id})
+                    except Exception:
+                        db.session.rollback()
+
+                    # delete any content_review rows for removed content
+                    try:
+                        if plan_ids:
+                            db.session.execute(text("DELETE FROM content_review WHERE tipo = 'plan' AND content_id = ANY(:pids)"), {'pids': plan_ids})
+                        if rutina_ids:
+                            db.session.execute(text("DELETE FROM content_review WHERE tipo = 'rutina' AND content_id = ANY(:rids)"), {'rids': rutina_ids})
+                    except Exception:
+                        db.session.rollback()
+
                     # delete entrenador row
                     try:
                         db.session.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
                     except Exception:
                         db.session.rollback()
 
-                # delete cliente row if exists
+                # delete cliente row if exists (raw DELETE to avoid ORM cascade/UPDATE)
                 try:
-                    Cliente.query.filter_by(usuario_id=user.id).delete()
+                    db.session.execute(text('DELETE FROM clientes WHERE usuario_id = :uid'), {'uid': user.id})
                 except Exception:
                     db.session.rollback()
 
-                # finally delete the user
-                db.session.delete(user)
-                db.session.commit()
-                return jsonify({'message': 'usuario eliminado (hard)'}), 200
+                # finally delete the user row with raw SQL to avoid ORM side-effects
+                try:
+                    db.session.execute(text('DELETE FROM usuarios WHERE id = :uid'), {'uid': user.id})
+                    db.session.commit()
+                    return jsonify({'message': 'usuario eliminado (hard)'}), 200
+                except Exception as e:
+                    db.session.rollback()
+                    raise
             except Exception as e:
                 db.session.rollback()
                 app.logger.exception('admin_delete_usuario hard delete failed')
