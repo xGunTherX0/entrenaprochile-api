@@ -48,9 +48,20 @@ def handle_exception(e):
 # Configurable CORS: limita orígenes en producción usando la variable de entorno
 # `CORS_ORIGINS`. Por defecto permite todos ('*') para facilitar pruebas.
 import os as _os
-# Default to localhost Vite dev origin when not provided to help local development.
-# In production set the env var `CORS_ORIGINS` to your frontend origin(s).
-_cors_origins = _os.getenv('CORS_ORIGINS', 'http://localhost:5173')
+# Default CORS origins handling:
+# - If `CORS_ORIGINS` env var is set, use it.
+# - Otherwise, if we're running in production (DATABASE_URL present),
+#   default to the known Netlify frontend origin so deployed frontend can talk to the API.
+# - Otherwise default to localhost dev origin for Vite.
+_default_local = 'http://localhost:5173'
+_netlify_origin = 'https://cfmc-entrenaprochile.netlify.app'
+if _os.getenv('CORS_ORIGINS') is not None:
+    _cors_origins = _os.getenv('CORS_ORIGINS')
+else:
+    if _os.getenv('DATABASE_URL'):
+        _cors_origins = _netlify_origin
+    else:
+        _cors_origins = _default_local
 
 # Configure CORS explicitly so preflight (OPTIONS) respuestas incluyan los encabezados necesarios.
 # Support flexible values in CORS_ORIGINS:
