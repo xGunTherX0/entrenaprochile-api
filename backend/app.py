@@ -1315,10 +1315,49 @@ def listar_mis_rutinas():
             except Exception:
                 app.logger.exception('listar_mis_rutinas: ORM fallback also failed')
                 # Return an empty list to avoid surfacing a 500 to the frontend for this user-facing call
-        # Allow preflight OPTIONS for reactivate without auth so browsers can perform the CORS preflight.
-        @app.route('/api/admin/usuarios/<int:usuario_id>/reactivar', methods=['OPTIONS'])
-        def admin_reactivar_options(usuario_id):
-            return ('', 200)
+    except Exception:
+        app.logger.exception('listar_mis_rutinas: ORM fallback also failed')
+        # Return an empty list to avoid surfacing a 500 to the frontend for this user-facing call
+        return jsonify([]), 200
+
+
+@app.route('/api/solicitudes/mis', methods=['GET'])
+@jwt_required
+def listar_solicitudes_mis():
+    token_user_id = request.jwt_payload.get('user_id')
+    if not token_user_id:
+        return jsonify({'error': 'authentication required'}), 401
+
+    try:
+        cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+    except Exception:
+        cliente = None
+    if not cliente:
+        return jsonify([]), 200
+
+    try:
+        from database.database import SolicitudPlan
+        sols = SolicitudPlan.query.filter_by(cliente_id=cliente.id).order_by(SolicitudPlan.creado_en.desc()).all()
+        result = []
+        for s in sols:
+            creado = None
+            try:
+                creado = s.creado_en.isoformat() if getattr(s, 'creado_en', None) else None
+            except Exception:
+                creado = None
+            rutina = None
+            try:
+                rutina = Rutina.query.filter_by(id=s.rutina_id).first()
+            except Exception:
+                rutina = None
+            # Provide plan/rutina names defensively so the frontend doesn't show 'null'
+            rutina_nombre = None
+            plan_nombre = None
+            try:
+                if rutina and getattr(rutina, 'nombre', None):
+                    rutina_nombre = rutina.nombre
+            except Exception:
+                rutina_nombre = None
             # If the solicitud refers to a plan instead, try to include its nombre
             if not rutina_nombre and getattr(s, 'plan_id', None):
                 try:
@@ -1336,6 +1375,73 @@ def listar_mis_rutinas():
         app.logger.exception('listar_solicitudes_mis failed')
         return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
+
+
+@app.route('/api/rutinas/<int:rutina_id>/solicitar', methods=['POST'])
+@jwt_required
+def solicitar_plan(rutina_id):
+    token_user_id = request.jwt_payload.get('user_id')
+    if not token_user_id:
+        return jsonify({'error': 'authentication required'}), 401
+
+    try:
+        cliente = Cliente.query.filter_by(usuario_id=token_user_id).first()
+    except Exception:
+        cliente = None
+    if not cliente:
+        try:
+            cliente = Cliente(usuario_id=token_user_id)
+            db.session.add(cliente)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            return jsonify({'error': 'cliente not found'}), 404
+
+    try:
+        rutina = Rutina.query.filter_by(id=rutina_id).first()
+        if not rutina:
+            return jsonify({'error': 'rutina not found'}), 404
+
+        # create solicitudes_plan table if missing
+        try:
+            db.session.execute(text(
+                "CREATE TABLE IF NOT EXISTS solicitudes_plan ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "cliente_id INTEGER NOT NULL, "
+                "rutina_id INTEGER, "
+                "plan_id INTEGER, "
+                "estado VARCHAR(50) DEFAULT 'pendiente', "
+                "nota TEXT, "
+                "creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+            # Ensure columns exist on older DBs: add plan_id and rutina_id if missing
+            try:
+                db.session.execute(text("ALTER TABLE solicitudes_plan ADD COLUMN plan_id INTEGER"))
+                db.session.execute(text("ALTER TABLE solicitudes_plan ADD COLUMN rutina_id INTEGER"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+        from database.database import SolicitudPlan
+        # For rutina-based requests we auto-accept (estado 'aceptado') so the
+        # cliente sees the solicitud active immediately (workflow: rutina -> plan)
+        s = SolicitudPlan(cliente_id=cliente.id, rutina_id=rutina.id, estado='aceptado')
+        db.session.add(s)
+        db.session.commit()
+        creado = None
+        try:
+            creado = s.creado_en.isoformat() if getattr(s, 'creado_en', None) else None
+        except Exception:
+            creado = None
+        return jsonify({'message': 'solicitud creada', 'id': s.id, 'creado_en': creado}), 201
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('solicitar_plan failed')
+        return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
 
 @app.route('/api/solicitudes/<int:solicitud_id>', methods=['DELETE'])
@@ -1544,9 +1650,12 @@ def crear_plan():
     nombre = data.get('nombre')
     descripcion = data.get('descripcion')
     contenido = data.get('contenido')
-    # Always keep new plans not-public by default; admin must approve to publish.
-    # Ignore any client-supplied `es_publico` to enforce review workflow.
-    es_publico = False
+    # Allow trainer to mark a plan as public at creation time when provided in the payload.
+    # Default to False (not public) if the client does not include the flag.
+    try:
+        es_publico = bool(data.get('es_publico', False))
+    except Exception:
+        es_publico = False
 
     if not nombre:
         # Required field missing
@@ -1701,10 +1810,16 @@ def listar_planes_publicos():
             try:
                 ent = _safe_entrenador_by_id(p.entrenador_id)
                 # skip plans if entrenador was deleted or its usuario is missing/inactive
-                if not ent or not getattr(ent, 'usuario', None) or getattr(ent.usuario, 'activo', True) is False:
-                    # do not expose plans that belong to non-existent or deactivated trainers
+                if not ent or not getattr(ent, 'usuario_id', None):
                     continue
-                entrenador_nombre = getattr(ent.usuario, 'nombre', None)
+                try:
+                    from database.database import Usuario
+                    u = Usuario.query.filter_by(id=ent.usuario_id).first()
+                    if not u or getattr(u, 'activo', True) is False:
+                        continue
+                    entrenador_nombre = getattr(u, 'nombre', None)
+                except Exception:
+                    entrenador_nombre = None
             except Exception:
                 entrenador_nombre = None
             result.append({'id': p.id, 'nombre': p.nombre, 'descripcion': p.descripcion, 'contenido': p.contenido, 'es_publico': p.es_publico, 'creado_en': creado, 'entrenador_nombre': entrenador_nombre, 'entrenador_id': p.entrenador_id})

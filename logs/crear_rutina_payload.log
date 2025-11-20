@@ -85,3 +85,15 @@ PAYLOAD: {'nombre': 'asdasd', 'descripcion': 'asdasda', 'objetivo_principal': 's
 ----
 TIME: 2025-11-17T03:29:59.245136
 PAYLOAD: {'nombre': 'dasdas', 'descripcion': 'dasdasda', 'objetivo_principal': 'sdasdas', 'enfoque_rutina': 'dasd', 'nivel': 'Básico', 'es_publica': False, 'link_url': 'https://www.youtube.com/watch?v=HohsJf51LZE&list=RDHohsJf51LZE&start_radio=1&t=596s', 'entrenador_id': '7'}
+----
+TIME: 2025-11-20T19:28:02.065331
+PAYLOAD: {'nombre': 'Rutina E2E', 'descripcion': 'Desc', 'nivel': 'medio', 'es_publica': True}
+----
+TIME: 2025-11-20T19:37:01.913694
+PAYLOAD: {'nombre': 'Rutina E2E', 'descripcion': 'Desc', 'nivel': 'medio', 'es_publica': True}
+----
+TIME: 2025-11-20T19:38:45.078889
+PAYLOAD: {'nombre': 'Rutina E2E', 'descripcion': 'Desc', 'nivel': 'medio', 'es_publica': True}
+----
+TIME: 2025-11-20T19:39:28.032038
+PAYLOAD: {'nombre': 'Rutina E2E', 'descripcion': 'Desc', 'nivel': 'medio', 'es_publica': True}

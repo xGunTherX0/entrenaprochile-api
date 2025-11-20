@@ -1,7 +1,12 @@
 param(
-    [string]$SiteId = 'ee7c0cff-df44-4456-b820-e3e008161104',
-    [string]$Token = 'nfp_HCdcdwPgeXzDQgj8xumr6SA6Zhun6qRC9aa7'
+    [string]$SiteId = $env:NETLIFY_SITE_ID,
+    [string]$Token = $env:NETLIFY_AUTH_TOKEN
 )
+
+if (-not $SiteId -or -not $Token) {
+    Write-Error "Please set NETLIFY_SITE_ID and NETLIFY_AUTH_TOKEN environment variables (or pass as parameters)."
+    exit 1
+}
 
 $dist = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Definition) "..\frontend\dist"
 $dist = (Get-Item $dist).FullName
