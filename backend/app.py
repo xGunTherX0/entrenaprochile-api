@@ -316,7 +316,9 @@ else:
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     db_file = os.path.join(repo_root, 'database', 'entrenapro.db')
     # SQLite URIs en Windows necesitan / separadores, y triple slash para ruta absoluta
-    SQLALCHEMY_URI = f"sqlite:///{db_file.replace('\\', '/')}"
+    # Avoid using backslashes inside f-string expressions (causes SyntaxError in some parsers).
+    replaced_db_file = db_file.replace('\\', '/')
+    SQLALCHEMY_URI = "sqlite:///" + replaced_db_file
     print(f"Modo Desarrollo: Conectando a SQLite ({SQLALCHEMY_URI})")
 
 # 3. Asigna la URI a la configuración de la aplicación
