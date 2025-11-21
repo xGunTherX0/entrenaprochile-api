@@ -3066,6 +3066,7 @@ def listar_entrenadores_publicos():
             except Exception:
                 rows = []
 
+        ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
         for rw in rows:
             try:
                 keys = getattr(rw, 'keys', lambda: [])()
@@ -3080,6 +3081,9 @@ def listar_entrenadores_publicos():
 
                 user = Usuario.query.filter_by(id=usuario_id).first()
                 if not user or getattr(user, 'activo', True) is False:
+                    continue
+                # Exclude the configured admin account from trainer lists
+                if getattr(user, 'email', None) and getattr(user, 'email') == ADMIN_EMAIL:
                     continue
                 trainers.append({'usuario_id': user.id, 'nombre': getattr(user, 'nombre', None), 'speciality': speciality, 'bio': bio, 'telefono': telefono, 'instagram_url': instagram_url, 'youtube_url': youtube_url, 'entrenador_id': ent_id})
             except Exception:
