@@ -77,7 +77,7 @@ jobs:
           login_resp=$(curl -s -X POST "$API_BASE/api/usuarios/login" -H 'Content-Type: application/json' -d "{\"email\": \"${ADMIN_EMAIL}\", \"password\": \"${ADMIN_PASSWORD}\"}")
           echo "login_resp=$login_resp"
             # Extract token without relying on jq (use python which is available on runner)
-            token=$(echo "$login_resp" | python -c 'import sys, json; j=json.load(sys.stdin); print(j.get("token",""))')
+            token=$(echo "$login_resp" | python -c "import sys, json; j=json.load(sys.stdin); print(j.get('token',''))")
           if [ -z "$token" ] || [ "$token" = "null" ]; then
             echo "Failed to obtain token"; exit 1
           fi
