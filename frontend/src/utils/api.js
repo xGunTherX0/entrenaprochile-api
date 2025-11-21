@@ -5,9 +5,19 @@ import router from '../router'
 // In dev, prefer a relative base so Vite's dev-server proxy can handle `/api` requests
 // If `VITE_API_BASE` is explicitly set, use it. Otherwise use '' in dev, and the
 // production host for non-dev builds.
-let BASE = import.meta.env.VITE_API_BASE !== undefined
-  ? import.meta.env.VITE_API_BASE
-  : (import.meta.env.DEV ? '' : 'https://entrenaprochile-api.onrender.com')
+// In development we prefer a relative base so Vite's proxy handles /api requests
+// even if a developer accidentally set VITE_API_BASE in a local .env file.
+let BASE
+if (import.meta.env.DEV) {
+  // In development use a relative base so Vite's dev-server proxy handles `/api`.
+  // This avoids CORS entirely while developing. Ensure you start Vite from the
+  // `frontend` folder (so the proxy is active) with `npm run dev`.
+  BASE = ''
+} else {
+  BASE = import.meta.env.VITE_API_BASE !== undefined
+    ? import.meta.env.VITE_API_BASE
+    : 'https://entrenaprochile-api.onrender.com'
+}
 // Normalize common shorthand values that developers sometimes set incorrectly
 // e.g. ":5000" or "localhost:5000" -> ensure a full URL with scheme
 try {

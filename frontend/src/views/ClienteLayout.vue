@@ -8,7 +8,7 @@
     <li class="mb-2"><router-link to="/cliente/misrutinas" class="text-left w-full">Mis Rutinas</router-link></li>
     <li class="mb-2"><router-link to="/cliente/planes" class="text-left w-full">Mis Planes Nutricionales</router-link></li>
     <li class="mb-2"><router-link to="/cliente/mediciones" class="text-left w-full">Registro de Mediciones</router-link></li>
-    <li class="mb-2"><router-link to="/entrenadores" class="text-left w-full">Ver Entrenadores</router-link></li>
+    <li class="mb-2"><router-link to="/cliente/entrenadores" class="text-left w-full">Ver Entrenadores</router-link></li>
   </ul>
       <div class="mt-6">
         <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>

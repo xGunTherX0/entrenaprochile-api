@@ -1,20 +1,26 @@
 <template>
-  <div class="min-h-screen flex bg-gray-50">
-    <nav class="w-64 bg-white border-r p-4">
-      <h2 class="text-xl font-bold mb-4">Entrenador</h2>
+  <div class="min-h-screen flex bg-gray-100">
+    <nav class="w-64 bg-indigo-700 text-white p-6 shadow-lg">
+      <h2 class="text-xl font-bold mb-6 text-white">Entrenador</h2>
       <ul>
-        <li class="mb-2"><button @click="select('rutinas')" :class="{'text-blue-600 font-semibold': activePanel==='rutinas'}" class="text-left w-full">Mis Rutinas</button></li>
-        <li class="mb-2"><button @click="select('planes')" :class="{'text-blue-600 font-semibold': activePanel==='planes'}" class="text-left w-full">Mis Planes Alimenticios</button></li>
-        <li class="mb-2"><button @click="select('aceptados')" :class="{'text-blue-600 font-semibold': activePanel==='aceptados'}" class="text-left w-full">Solicitudes Aceptadas</button></li>
-        <li class="mb-2"><button @click="select('publicar')" :class="{'text-blue-600 font-semibold': activePanel==='publicar'}" class="text-left w-full">Publicar Contenido</button></li>
-        <li class="mb-2"><button @click="select('perfil')" :class="{'text-blue-600 font-semibold': activePanel==='perfil'}" class="text-left w-full">Perfil</button></li>
+        <li class="mb-2"><button @click="select('rutinas')" :class="{'bg-indigo-800/60 text-white font-semibold': activePanel==='rutinas'}" class="text-left block w-full py-2 rounded">Mis Rutinas</button></li>
+        <li class="mb-2"><button @click="select('planes')" :class="{'bg-indigo-800/60 text-white font-semibold': activePanel==='planes'}" class="text-left block w-full py-2 rounded">Mis Planes Alimenticios</button></li>
+        <li class="mb-2"><button @click="select('aceptados')" :class="{'bg-indigo-800/60 text-white font-semibold': activePanel==='aceptados'}" class="text-left block w-full py-2 rounded">Solicitudes Aceptadas</button></li>
+        <li class="mb-2"><button @click="select('publicar')" :class="{'bg-indigo-800/60 text-white font-semibold': activePanel==='publicar'}" class="text-left block w-full py-2 rounded">Publicar Contenido</button></li>
+        <li class="mb-2"><button @click="select('perfil')" :class="{'bg-indigo-800/60 text-white font-semibold': activePanel==='perfil'}" class="text-left block w-full py-2 rounded">Perfil</button></li>
       </ul>
       <div class="mt-6">
-        <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
+        <div class="space-y-2">
+          <button @click="$router.push('/change-password')" class="px-3 py-2 bg-white/10 text-white rounded w-full">Cambiar contraseña</button>
+          <button @click="logout" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded w-full">Cerrar Sesión</button>
+        </div>
       </div>
     </nav>
     <main class="flex-1 p-6">
-      <h1 class="text-2xl font-bold">Entrenador Dashboard</h1>
+      <div class="bg-white rounded-lg p-4 shadow-sm mb-6 text-gray-800">
+        <h1 class="text-2xl font-bold text-indigo-800">Entrenador Dashboard</h1>
+        <p class="text-sm text-gray-700">Gestiona tus rutinas, planes y solicitudes desde aquí.</p>
+      </div>
 
       <section v-if="activePanel === 'rutinas'" class="mt-4">
         <h2 class="text-xl font-semibold mb-2">Crear nueva Rutina</h2>
@@ -51,21 +57,21 @@
                Material Requerido, Instrucciones Estructurales (no longer part of create form) -->
           <!-- Removed create-time 'Es pública' checkbox: new content goes to review -->
           <div>
-            <button type="submit" class="px-3 py-2 bg-green-600 text-white rounded">Crear Rutina</button>
+            <button type="submit" class="px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded">Crear Rutina</button>
           </div>
         </form>
 
   <h2 class="text-xl font-semibold mt-6 mb-2">Mis Rutinas</h2>
-        <div class="bg-white p-4 rounded shadow-sm">
-          <table class="min-w-full divide-y divide-gray-200">
+        <div class="bg-white p-4 rounded shadow-sm text-gray-800">
+          <table class="min-w-full divide-y">
             <thead>
               <tr>
-                <th class="px-4 py-2 text-left">Nombre</th>
-                <th class="px-4 py-2 text-left">Descripción</th>
-                <th class="px-4 py-2 text-left">Nivel</th>
-                <th class="px-4 py-2 text-left">Objetivo</th>
-                <th class="px-4 py-2 text-left">Enfoque</th>
-                      <th class="px-4 py-2 text-left">Enlace</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-indigo-700">Nombre</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-indigo-700">Descripción</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-indigo-700">Nivel</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-indigo-700">Objetivo</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-indigo-700">Enfoque</th>
+                      <th class="px-4 py-2 text-left text-sm font-medium text-indigo-700">Enlace</th>
                 <!-- Removed columns: Cualidades, Duración, Material, Instrucciones -->
                 <th class="px-4 py-2 text-left">Pública</th>
                 <th class="px-4 py-2 text-left">Creado</th>
@@ -127,7 +133,7 @@
                 <td class="px-4 py-2">{{ formatDate(r.creado_en) }}</td>
                 <td class="px-4 py-2">
                   <div v-if="editingId !== r.id" class="space-x-2">
-                    <button @click="startEdit(r)" class="px-2 py-1 bg-yellow-400 text-white rounded">Editar</button>
+                    <button @click="startEdit(r)" class="px-2 py-1 bg-yellow-500 text-white rounded">Editar</button>
                     <button @click="deleteRutina(r.id)" class="px-2 py-1 bg-red-600 text-white rounded">Eliminar</button>
                   </div>
                   <div v-else class="space-x-2">

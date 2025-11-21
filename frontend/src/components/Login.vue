@@ -1,34 +1,53 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="px-8 py-6 mt-4 text-left bg-white shadow-lg">
-      <h3 class="text-2xl font-bold text-center">Login</h3>
-      <!-- Error visible para el usuario -->
-      <div v-if="error" class="mt-4 text-center">
-        <div class="inline-block px-4 py-2 text-sm text-red-700 bg-red-100 border border-red-200 rounded">
-          {{ error }}
+  <div class="min-h-screen flex items-center justify-center p-6 bg-gray-900 text-white">
+    <div class="w-full max-w-md surface-card overflow-hidden">
+      <div class="px-8 py-8">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-400 rounded flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2L15 8H9L12 2Z" fill="white"/><path d="M3 22L12 13L21 22H3Z" fill="white"/><path d="M7 11H17V13H7V11Z" fill="white"/></svg>
+            </div>
+            <div>
+              <div class="text-lg font-bold">EntrenaProChile</div>
+              <div class="text-xs text-gray-400">Inicia sesión en tu cuenta</div>
+            </div>
+          </div>
+          <router-link to="/register" class="text-sm text-gray-300 hover:text-white">Regístrate</router-link>
         </div>
+
+        <h3 class="text-2xl font-extrabold text-white mb-2">Iniciar sesión</h3>
+        <p class="text-sm text-gray-300 mb-4">Accede para gestionar tus rutinas y clientes</p>
+
+        <div v-if="error" class="mb-4">
+          <div class="px-4 py-2 text-sm text-red-100 bg-red-700/20 border border-red-700/30 rounded">
+            {{ error }}
+          </div>
+        </div>
+
+        <form @submit.prevent="onSubmit">
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm text-gray-300">Email</label>
+              <input v-model="email" type="text" placeholder="Correo electrónico"
+                class="w-full mt-2 px-4 py-3 rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 border border-white/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400" />
+            </div>
+
+            <div>
+              <label class="text-sm text-gray-300">Contraseña</label>
+              <input v-model="password" type="password" placeholder="Contraseña"
+                class="w-full mt-2 px-4 py-3 rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 border border-white/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500" />
+            </div>
+
+            <div class="flex items-center justify-between">
+              <button :disabled="loading" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-400 to-green-400 text-black font-semibold rounded-full shadow disabled:opacity-60 focus-ring">
+                <svg v-if="loading" class="w-4 h-4 animate-spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.2)" stroke-width="4" fill="none" /></svg>
+                {{ loading ? 'Conectando...' : 'Iniciar sesión' }}
+              </button>
+              <router-link to="/forgot" class="text-sm text-gray-300 hover:text-white">¿Olvidaste tu contraseña?</router-link>
+            </div>
+          </div>
+        </form>
       </div>
-      <form @submit.prevent="onSubmit">
-        <div class="mt-4">
-          <div>
-            <label class="block" for="email">Email</label>
-            <input v-model="email" type="text" placeholder="Email"
-              class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600">
-          </div>
-          <div class="mt-4">
-            <label class="block">Password</label>
-            <input v-model="password" type="password" placeholder="Password"
-              class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600">
-          </div>
-          <div class="flex items-baseline justify-between">
-            <button :disabled="loading"
-              class="px-6 py-2 mt-4 text-white bg-[#1ED66C] rounded-lg hover:bg-green-500 disabled:opacity-50">
-              {{ loading ? 'Logging...' : 'Login' }}
-            </button>
-            <a href="#" class="text-sm text-blue-600 hover:underline">Forgot password?</a>
-          </div>
-        </div>
-      </form>
     </div>
   </div>
 </template>

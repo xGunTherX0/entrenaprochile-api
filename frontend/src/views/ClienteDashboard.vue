@@ -9,7 +9,10 @@
         <li class="mb-2"><button @click="select('mediciones')" :class="{'text-blue-600 font-semibold': activePanel==='mediciones'}" class="text-left w-full">Registro de Mediciones</button></li>
       </ul>
       <div class="mt-6">
-        <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
+        <div class="space-y-2">
+          <button @click="$router.push('/change-password')" class="px-3 py-2 bg-gray-200 text-gray-800 rounded w-full">Cambiar contraseña</button>
+          <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded w-full">Cerrar Sesión</button>
+        </div>
       </div>
     </nav>
     <main class="flex-1 p-6">

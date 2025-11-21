@@ -1,36 +1,34 @@
 <template>
   <div>
     <div class="flex justify-between items-center">
-      <h2 class="text-lg font-semibold">Usuarios</h2>
-      <button @click="showCreate = true" class="px-3 py-2 bg-green-600 text-white rounded">Crear Usuario</button>
+      <h2 class="text-lg font-semibold text-indigo-800">Usuarios</h2>
+      <button @click="showCreate = true" class="px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded">Crear Usuario</button>
     </div>
 
-    <div class="mt-3 bg-white rounded shadow overflow-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+    <div class="mt-3 bg-white rounded shadow overflow-auto text-gray-800">
+      <table class="min-w-full divide-y">
+        <thead class="bg-indigo-600">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Email</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Nombre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Role</th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="u in users" :key="u.id">
+        <tbody class="bg-white divide-y divide-gray-100 text-gray-800">
+          <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.id }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><router-link :to="`/admin/usuarios/${u.id}`" class="text-blue-600 hover:underline">{{ u.email }}</router-link></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><router-link :to="`/admin/usuarios/${u.id}`" class="text-indigo-700 hover:underline font-medium">{{ u.email }}</router-link></td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.nombre }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.role }} <span v-if="u.activo===false" class="text-sm text-red-600">(desactivado)</span></td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-              <button v-if="u.role !== 'entrenador' && u.role !== 'admin'" @click="promote(u.id)" class="text-indigo-600 hover:text-indigo-900 mr-3">Promover</button>
-              <button v-if="u.role === 'entrenador'" @click="demoteToClient(u.id)" class="text-purple-600 hover:text-purple-900 mr-3">Degradar</button>
-              <button @click="changeRole(u.id)" class="text-gray-600 hover:text-gray-900 mr-3">Cambiar rol</button>
-              <!-- Nuevo botón: desactivar cuenta (soft) -->
-              <button v-if="u.activo !== false" @click="deactivate(u.id)" class="text-yellow-600 hover:text-yellow-900 mr-3">Desactivar</button>
-              <!-- Botón reactivar para usuarios desactivados -->
-              <button v-else @click="reactivate(u.id)" class="text-green-700 hover:text-green-900 mr-3">Reactivar</button>
-              <button @click="remove(u.id)" class="text-red-600 hover:text-red-900">Borrar</button>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+              <button v-if="u.role !== 'entrenador' && u.role !== 'admin'" @click="promote(u.id)" class="px-2 py-1 bg-indigo-500 text-white rounded">Promover</button>
+              <button v-if="u.role === 'entrenador'" @click="demoteToClient(u.id)" class="px-2 py-1 bg-purple-500 text-white rounded">Degradar</button>
+              <button @click="changeRole(u.id)" class="px-2 py-1 bg-gray-200 text-gray-800 rounded">Cambiar rol</button>
+              <button v-if="u.activo !== false" @click="deactivate(u.id)" class="px-2 py-1 bg-yellow-400 text-white rounded">Desactivar</button>
+              <button v-else @click="reactivate(u.id)" class="px-2 py-1 bg-green-600 text-white rounded">Reactivar</button>
+              <button @click="remove(u.id)" class="px-2 py-1 bg-red-600 text-white rounded">Borrar</button>
             </td>
           </tr>
         </tbody>

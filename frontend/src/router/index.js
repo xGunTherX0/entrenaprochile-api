@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../components/Login.vue'
 import EntrenadorDashboard from '../views/EntrenadorDashboard.vue'
 import EntrenadorAprobar from '../views/EntrenadorAprobar.vue'
-import ClienteDashboard from '../views/ClienteDashboard.vue'
 import ClienteRutina from '../views/ClienteRutina.vue'
 import Home from '../views/Home.vue'
 import Admin from '../views/Admin.vue'
@@ -43,7 +42,11 @@ const routes = [
     ]
   },
 
-  { path: '/home', name: 'Home', component: Home },
+  { path: '/home', component: Home },
+  { path: '/register', name: 'Register', component: () => import('../views/Register.vue') },
+  { path: '/forgot', name: 'Forgot', component: () => import('../views/Forgot.vue') },
+  { path: '/reset', name: 'ResetPassword', component: () => import('../views/ResetPassword.vue') },
+  { path: '/change-password', name: 'ChangePassword', component: () => import('../views/ChangePassword.vue') },
   // Keep legacy top-level routes but redirect to the cliente-layout variants
   { path: '/entrenadores', redirect: '/cliente/entrenadores' },
   { path: '/entrenadores/:id', redirect: to => `/cliente/entrenadores/${to.params.id}` },
@@ -64,6 +67,9 @@ const routes = [
   }
 ]
 
+// Catch-all: redirect unknown paths to home to avoid blank pages
+routes.push({ path: '/:pathMatch(.*)*', redirect: '/' })
+
 const router = createRouter({
   history: createWebHistory(),
   routes
@@ -81,7 +87,8 @@ router.beforeEach((to, from, next) => {
     const role = auth.getRole()
     const userId = localStorage.getItem('user_id')
     if (!token || !role || !userId) {
-      // No logueado -> redirigir al login
+      // No logueado -> redirigir al login (avoid redirect loop if already at '/')
+      if (to.path === '/') return next()
       return next({ path: '/' })
     }
   }

@@ -173,3 +173,17 @@ class RevokedToken(db.Model):
 
     def __repr__(self):
         return f'<RevokedToken {self.jti}>'
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(128), unique=True, nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+
+    usuario = db.relationship('Usuario')
+
+    def __repr__(self):
+        return f'<PasswordResetToken {self.token} for {self.usuario_id}>'

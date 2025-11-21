@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen flex bg-gray-50">
-      <nav class="w-64 bg-white border-r p-4">
-      <h2 class="text-xl font-bold mb-4">Admin</h2>
+    <div class="min-h-screen flex bg-gray-100">
+      <nav class="w-64 bg-indigo-700 text-white p-6 shadow-lg">
+      <h2 class="text-xl font-bold mb-6 text-white">Admin</h2>
       <ul>
         <li class="mb-2">
-          <router-link to="/admin/usuarios" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='usuarios'}">Gestionar Usuarios</router-link>
+          <router-link to="/admin/usuarios" class="text-left w-full block py-2 rounded" :class="{ 'bg-indigo-800/60 text-white font-semibold': activePanel==='usuarios', 'text-white/90 hover:text-white': activePanel!=='usuarios' }">Gestionar Usuarios</router-link>
         </li>
         <li class="mb-2">
           <router-link to="/admin/review" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='review'}">Revisión Contenido</router-link>
@@ -16,15 +16,18 @@
         </li>
         <!-- 'Aprobar Contenido' eliminado: la gestión se hace desde la vista de entrenador -->
         <li class="mb-2">
-          <router-link to="/admin/metricas" class="text-left w-full" :class="{'text-blue-600 font-semibold': activePanel==='metricas'}">Métricas</router-link>
+          <router-link to="/admin/metricas" class="text-left w-full block py-2 rounded" :class="{ 'bg-indigo-800/60 text-white font-semibold': activePanel==='metricas', 'text-white/90 hover:text-white': activePanel!=='metricas' }">Métricas</router-link>
         </li>
       </ul>
       <div class="mt-6">
-        <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded">Cerrar Sesión</button>
+        <button @click="logout" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded w-full">Cerrar Sesión</button>
       </div>
     </nav>
       <main class="flex-1 p-6">
-      <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+      <div class="bg-white rounded-lg p-4 shadow-sm mb-6">
+        <h1 class="text-2xl font-bold text-indigo-800">Admin Dashboard</h1>
+        <p class="text-sm text-gray-600">Panel administrativo — gestiona usuarios, métricas y contenido.</p>
+      </div>
       <!-- Network/offline banner: show when api reports a last network error -->
       <div v-if="lastNetworkError" class="mt-4 p-3 rounded bg-yellow-100 border-l-4 border-yellow-400 text-yellow-800">
         <div class="flex items-start justify-between">
@@ -42,7 +45,9 @@
 
       <!-- router outlet for admin child panels -->
       <div class="w-full">
-        <router-view @refresh-metrics="loadMetrics"></router-view>
+        <div class="bg-white rounded shadow-sm p-4 text-gray-800">
+          <router-view @refresh-metrics="loadMetrics"></router-view>
+        </div>
       </div>
 
       <!-- Create user modal -->
@@ -71,7 +76,7 @@
           </div>
           <div class="flex justify-end">
             <button @click="closeModal" class="mr-2 px-3 py-2 border rounded">Cancelar</button>
-            <button @click="createUser" :disabled="creating" class="px-3 py-2 bg-blue-600 text-white rounded">{{ creating ? 'Creando...' : 'Crear' }}</button>
+            <button @click="createUser" :disabled="creating" class="px-3 py-2 bg-gradient-to-r from-indigo-600 to-blue-500 text-white rounded">{{ creating ? 'Creando...' : 'Crear' }}</button>
           </div>
           <div v-if="createError" class="mt-3 text-sm text-red-600">{{ createError }}</div>
         </div>

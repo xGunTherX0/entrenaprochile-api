@@ -109,7 +109,35 @@ CORS(app,
 def _handle_api_options_preflight():
     try:
         if request.method == 'OPTIONS' and request.path.startswith('/api/'):
-            return ('', 200)
+            # Build a proper response for preflight that includes the CORS headers
+            from flask import make_response
+            resp = make_response(('', 200))
+            origin = request.headers.get('Origin')
+            app.logger.debug('CORS preflight for %s from Origin=%s', request.path, origin)
+            allowed = cors_origins_config
+            # Resolve allowed origin header value
+            if allowed == '*':
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+            else:
+                try:
+                    if isinstance(allowed, (list, tuple)):
+                        if origin and origin in allowed:
+                            resp.headers['Access-Control-Allow-Origin'] = origin
+                        else:
+                            resp.headers['Access-Control-Allow-Origin'] = allowed[0] if allowed else ''
+                    else:
+                        resp.headers['Access-Control-Allow-Origin'] = str(allowed)
+                except Exception:
+                    resp.headers['Access-Control-Allow-Origin'] = '*'
+
+            if cors_supports_credentials:
+                resp.headers['Access-Control-Allow-Credentials'] = 'true'
+                app.logger.debug('CORS preflight: Allow-Credentials=true')
+
+            resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            resp.headers['Access-Control-Allow-Headers'] = app.config.get('CORS_HEADERS', 'Content-Type,Authorization')
+            app.logger.debug('CORS preflight response headers: %s', {k: resp.headers.get(k) for k in ['Access-Control-Allow-Origin','Access-Control-Allow-Credentials','Access-Control-Allow-Methods','Access-Control-Allow-Headers']})
+            return resp
     except Exception:
         # In case request isn't available or other unexpected error, don't block startup
         pass
@@ -143,6 +171,7 @@ def _ensure_cors_headers(response):
             # Credentials
             if cors_supports_credentials:
                 response.headers.setdefault('Access-Control-Allow-Credentials', 'true')
+            app.logger.debug('CORS applied to response for %s: Origin=%s, Allow-Origin=%s', request.path, origin, response.headers.get('Access-Control-Allow-Origin'))
 
             # Allowed methods and headers
             response.headers.setdefault('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -152,7 +181,7 @@ def _ensure_cors_headers(response):
     return response
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from backend.auth import generate_token
+from backend.auth import generate_token, jwt_required
 from sqlalchemy import text
 import traceback
 
@@ -319,6 +348,178 @@ def login_usuario():
         else:
             import traceback as _tb
             return jsonify({'error': 'internal', 'detail': _tb.format_exc()}), 500
+
+
+@app.route('/api/usuarios/forgot', methods=['POST'])
+def forgot_password():
+    """Request a password reset. Body: { email }
+
+    For development this returns the token in the response. In production
+    you should email the token to the user and not expose it in the API.
+    """
+    try:
+        data = request.get_json() or {}
+        email = data.get('email')
+        if not email:
+            return jsonify({'error': 'email required'}), 400
+
+        from database.database import Usuario, PasswordResetToken, db as _db
+        user = Usuario.query.filter_by(email=email).first()
+        if not user:
+            # don't reveal whether the email exists — return success for UX
+            return jsonify({'message': 'if the email exists, a reset token was created'}), 200
+
+        import uuid
+        from datetime import datetime, timedelta
+        token = str(uuid.uuid4())
+        expires = datetime.utcnow() + timedelta(hours=1)
+
+        pr = PasswordResetToken(token=token, usuario_id=user.id, expires_at=expires, used=False)
+        _db.session.add(pr)
+        _db.session.commit()
+
+        # In production: send email with link like https://your.site/reset?token=...
+        # For development convenience we return the token in the response.
+        return jsonify({'message': 'reset token created', 'token': token, 'expires_at': expires.isoformat()}), 200
+    except Exception as e:
+        app.logger.exception('forgot_password failed')
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({'error': 'internal', 'detail': str(e)}), 500
+
+
+@app.route('/api/usuarios/reset_password', methods=['POST'])
+def reset_password():
+    """Reset password using token. Body: { token, password }
+    """
+    try:
+        data = request.get_json() or {}
+        token = data.get('token')
+        password = data.get('password')
+        if not token or not password:
+            return jsonify({'error': 'token and password required'}), 400
+
+        from database.database import PasswordResetToken, Usuario, db as _db
+        from datetime import datetime
+
+        pr = PasswordResetToken.query.filter_by(token=token).first()
+        if not pr:
+            return jsonify({'error': 'invalid token'}), 400
+        if pr.used:
+            return jsonify({'error': 'token already used'}), 400
+        if pr.expires_at < datetime.utcnow():
+            return jsonify({'error': 'token expired'}), 400
+
+        user = Usuario.query.filter_by(id=pr.usuario_id).first()
+        if not user:
+            return jsonify({'error': 'user not found'}), 404
+
+        # Update password
+        from werkzeug.security import generate_password_hash
+        user.hashed_password = generate_password_hash(password)
+        pr.used = True
+
+        _db.session.add(user)
+        _db.session.add(pr)
+        _db.session.commit()
+
+        return jsonify({'message': 'password updated'}), 200
+    except Exception as e:
+        app.logger.exception('reset_password failed')
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({'error': 'internal', 'detail': str(e)}), 500
+
+
+@app.route('/api/usuarios/change_password', methods=['POST'])
+@jwt_required
+def change_password():
+    """Change password for authenticated user.
+    Body: { "old_password": "...", "new_password": "..." }
+    Requires JWT; verifies current password before updating.
+    """
+    try:
+        data = request.get_json() or {}
+        old = data.get('old_password')
+        new = data.get('new_password')
+        if not old or not new:
+            return jsonify({'error': 'old_password and new_password required'}), 400
+
+        token_user_id = request.jwt_payload.get('user_id')
+        if not token_user_id:
+            return jsonify({'error': 'authentication required'}), 401
+
+        from database.database import Usuario, db as _db
+
+        user = Usuario.query.filter_by(id=token_user_id).first()
+        if not user:
+            return jsonify({'error': 'user not found'}), 404
+
+        if not check_password_hash(getattr(user, 'hashed_password', ''), old):
+            return jsonify({'error': 'invalid current password'}), 401
+
+        user.hashed_password = generate_password_hash(new)
+        _db.session.add(user)
+        _db.session.commit()
+
+        return jsonify({'message': 'password changed'}), 200
+    except Exception as e:
+        app.logger.exception('change_password failed')
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({'error': 'internal', 'detail': str(e)}), 500
+
+
+@app.route('/api/usuarios/set_password', methods=['POST'])
+@jwt_required
+def set_password():
+    """Quick set password for authenticated user.
+    Body: { "new_password": "..." }
+    This endpoint is intended for development / low-friction flows where
+    email infrastructure is not available. It will only allow a password
+    set without the old password when the environment variable
+    `ALLOW_SIMPLE_PASSWORD_CHANGE` is set to '1' or 'true'. Otherwise it
+    returns 403 and the client should call `/change_password` with the
+    current password.
+    """
+    try:
+        # Check feature flag. Allow quick set in development (no DATABASE_URL) by default
+        allow_flag = os.getenv('ALLOW_SIMPLE_PASSWORD_CHANGE', '0').lower() in ('1', 'true', 'yes')
+        allow = allow_flag or (not DATABASE_URL)
+        data = request.get_json() or {}
+        new = data.get('new_password')
+        if not new:
+            return jsonify({'error': 'new_password required'}), 400
+
+        if not allow:
+            return jsonify({'error': 'simple password change not allowed', 'hint': 'use change_password with old_password'}), 403
+
+        token_user_id = request.jwt_payload.get('user_id')
+        if not token_user_id:
+            return jsonify({'error': 'authentication required'}), 401
+
+        from database.database import Usuario, db as _db
+        user = Usuario.query.filter_by(id=token_user_id).first()
+        if not user:
+            return jsonify({'error': 'user not found'}), 404
+
+        user.hashed_password = generate_password_hash(new)
+        _db.session.add(user)
+        _db.session.commit()
+        return jsonify({'message': 'password updated'}), 200
+    except Exception as e:
+        app.logger.exception('set_password failed')
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({'error': 'internal', 'detail': str(e)}), 500
 
 
 # --- Lógica de Conexión (el cambio clave) ---
