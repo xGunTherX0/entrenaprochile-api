@@ -4,7 +4,12 @@
     <header class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-400 rounded flex items-center justify-center">
-          <img src="/logo192.png" alt="logo" class="w-7 h-7" />
+          <!-- Inline SVG logo to avoid missing file import -->
+          <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2L15 8H9L12 2Z" fill="white"/>
+            <path d="M3 22L12 13L21 22H3Z" fill="white"/>
+            <path d="M7 11H17V13H7V11Z" fill="white"/>
+          </svg>
         </div>
         <span class="font-extrabold text-xl">EntrenaPro</span>
       </div>
@@ -48,9 +53,12 @@ export default {
   name: 'Home',
   computed: {
     heroStyle() {
-      // Use a gym-themed image hosted externally if no local asset exists
-      const url = 'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=1600&q=80'
-      return `background-image: url(${url});`;
+      // Use the user-provided image URL for the hero background.
+      // Note: Hotlinking third-party images (Shutterstock, etc.) may be blocked
+      // or require licensing. If this image doesn't load, download it and
+      // put it in `frontend/public/hero.jpg` and change the URL to '/hero.jpg'.
+      const url = 'https://www.shutterstock.com/image-photo/home-workout-man-doing-ab-260nw-1132404866.jpg'
+      return `background-image: url(${url}); background-size: cover; background-position: center;`;
     }
   }
 }
