@@ -11,7 +11,8 @@ import AdminUsuarios from '../views/admin/Usuarios.vue'
 import AdminMetricas from '../views/admin/Metricas.vue'
 
 const routes = [
-  { path: '/', name: 'Login', component: Login },
+  { path: '/', name: 'Home', component: Home },
+  { path: '/login', name: 'Login', component: Login },
 
   { path: '/entrenador', redirect: '/entrenador/rutinas' },
   { path: '/entrenador/rutinas', name: 'EntrenadorRutinas', component: EntrenadorDashboard },
