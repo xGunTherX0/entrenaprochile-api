@@ -39,22 +39,19 @@ if ($SiteId -and $SiteId -match '^https?://') {
 $env:NPM_CONFIG_OPTIONAL = "false"
 if (Test-Path package-lock.json) { npm ci --omit=optional } else { npm install --omit=optional }
 
-# Ensure esbuild platform binary is installed if omitted earlier
+# Ensure esbuild is available when needed, but do NOT install platform-specific @esbuild/* packages.
+# Installing platform-specific @esbuild binaries can cause EBADPLATFORM on CI (Linux) if a Windows-only
+# package is present in package-lock.json. The preinstall script now deletes package-lock.json on Linux,
+# so a normal `npm install` will pull the correct platform binary.
 try {
-  $arch = $env:PROCESSOR_ARCHITECTURE
-  $os = $env:OS
-  if ($os -like '*Windows*' -or $env:OS -eq 'Windows_NT') {
-    if ($arch -match 'AMD64|x86_64') { $esbuildPkg = '@esbuild/win32-x64' }
-    elseif ($arch -match 'ARM64') { $esbuildPkg = '@esbuild/win32-arm64' }
-    else { $esbuildPkg = '@esbuild/win32-x64' }
+  if ($env:OS -like '*Windows*' -or $env:OS -eq 'Windows_NT') {
+    Write-Output "On Windows: ensure generic 'esbuild' package is installed (no-save)..."
+    npm install esbuild --no-save
   } else {
-    if ($IsLinux) { $esbuildPkg = '@esbuild/linux-x64' }
-    elseif ($IsMacOS) { $esbuildPkg = '@esbuild/darwin-x64' } else { $esbuildPkg = '@esbuild/linux-x64' }
+    Write-Output "Non-Windows environment detected: skipping explicit esbuild platform install."
   }
-  Write-Output "Ensuring esbuild platform package $esbuildPkg is installed (no-save)..."
-  npm install $esbuildPkg --no-save
 } catch {
-  Write-Output "Warning: failed to install esbuild platform binary: $_"
+  Write-Output "Warning: failed to ensure esbuild availability: $_"
 }
 
 npm run build

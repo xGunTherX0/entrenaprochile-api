@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "preinstall": "node -e \"if(process.platform==='linux' && require('fs').existsSync('package-lock.json')) require('fs').unlinkSync('package-lock.json')\"",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
@@ -17,7 +18,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@esbuild/win32-x64": "^0.27.0",
+    
     "@vitejs/plugin-vue": "^4.0.0",
     "autoprefixer": "^10.4.14",
     "esbuild": "^0.27.0",
@@ -26,6 +27,6 @@
     "vite": "^4.1.4"
   },
   "optionalDependencies": {
-    "@esbuild/win32-x64": "^0.27.0"
+    
   }
 }
