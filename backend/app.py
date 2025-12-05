@@ -11,8 +11,17 @@ try:
 except Exception:
     pass
 from flask import Flask, jsonify, request
-from google.oauth2 import id_token as google_id_token
-from google.auth.transport import requests as google_auth_requests
+# Attempt to import google auth libraries. If missing, avoid crashing the
+# whole app at import time so the service can start and we can return a
+# clear diagnostic from the specific endpoint.
+try:
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests as google_auth_requests
+    _GOOGLE_AUTH_AVAILABLE = True
+except Exception:
+    google_id_token = None
+    google_auth_requests = None
+    _GOOGLE_AUTH_AVAILABLE = False
 from datetime import datetime
 # Mejor configuración CORS: permitimos los encabezados comunes (Authorization, Content-Type)
 # y soportamos credenciales si es necesario. `CORS_ORIGINS` puede venir desde entorno.
