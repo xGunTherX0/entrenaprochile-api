@@ -3,7 +3,7 @@ services:
     name: entrenapro-backend
     env: python
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: pip install -r backend/requirements_clean.txt
     startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT
     # No incluir DATABASE_URL aquí; configúrala en la UI de Render o usando secrets
 
