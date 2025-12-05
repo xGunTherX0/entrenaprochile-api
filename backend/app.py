@@ -3075,7 +3075,18 @@ def admin_delete_usuario(usuario_id):
                     conn.execute(text('DELETE FROM clientes WHERE usuario_id = :uid'), {'uid': user.id})
 
                     # Remove any password reset tokens referencing this usuario (FK -> usuarios.id)
-                    conn.execute(text('DELETE FROM password_reset_tokens WHERE usuario_id = :uid'), {'uid': user.id})
+                    # In some production DBs this table may not exist (migrations not applied).
+                    # Guard against that by swallowing the "relation does not exist" error
+                    # so the hard-delete can proceed; re-raise other unexpected errors.
+                    try:
+                        conn.execute(text('DELETE FROM password_reset_tokens WHERE usuario_id = :uid'), {'uid': user.id})
+                    except Exception as e:
+                        msg = str(e).lower()
+                        if 'does not exist' in msg or 'undefinedtable' in msg or 'password_reset_tokens' in msg:
+                            # Table missing — ignore and continue with deletion
+                            pass
+                        else:
+                            raise
 
                     # finally delete the user row with raw SQL to avoid ORM side-effects
                     conn.execute(text('DELETE FROM usuarios WHERE id = :uid'), {'uid': user.id})
