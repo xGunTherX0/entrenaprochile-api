@@ -1,92 +1,108 @@
-# EntrenaProChile API
+    # EntrenaProChile (EntrenaPro)
 
-Esta es la API para el proyecto EntrenaProChile.
+    Plataforma web para la gestión de clientes, rutinas de entrenamiento y planes alimenticios.
+    Frontend desacoplado (Vue + Tailwind) y Backend en Python/Flask con API REST.
 
-## Descripción del Proyecto
+    ---
 
-**EntrenaProChile** es una plataforma web integral diseñada para simplificar y centralizar la gestión de clientes, rutinas de entrenamiento y planes alimenticios.
+    ## Tabla de contenido
+    - [Descripción](#descripción)
+    - [Diseño visual y estilo](#diseño-visual-y-estilo)
+    - [Arquitectura y tecnologías](#arquitectura-y-tecnologías)
+    - [Endpoints principales](#endpoints-principales)
+    - [Requerimientos](#requerimientos)
+    - [Roles y equipo](#roles-y-equipo)
+    - [Migración SQLite → PostgreSQL](#migración-sqlite--postgresql)
+    - [Diagramas y artefactos](#diagramas-y-artefactos)
+    - [Conclusiones y próximos pasos](#conclusiones-y-próximos-pasos)
 
-El objetivo principal es centralizar y simplificar la gestión de clientes, planes de entrenamiento y dietas en una plataforma única y fácil de usar.
+    ---
 
-### Roles de Usuario
+    ## Descripción
+    EntrenaPro es una plataforma diseñada para centralizar y simplificar la gestión de clientes,
+    planes de entrenamiento y dietas. Permite a entrenadores publicar rutinas y planes, y a
+    clientes registrar mediciones y seguir su progreso.
 
-La plataforma soporta tres roles principales:
+    ## Diseño visual y estilo
+    - Color primario (fondo): `#FFFFFF` (blanco)
+    - Color secundario (texto / headers): `#000000` o azul oscuro `#0A192F`
+    - Color de acento: azul vibrante (ej. `#007BFF`) para botones y enlaces
+    - Tipografía sugerida: Montserrat o Roboto
 
-1.  **Administrador:** Puede gestionar usuarios y contenido.
-2.  **Entrenador:** Puede crear, leer, actualizar y eliminar (CRUD) sus propias rutinas y planes alimenticios.
-3.  **Cliente:** Puede registrar sus mediciones corporales, ver su progreso en gráficas y seleccionar las rutinas y planes asignados por su entrenador.
+    ## Arquitectura y tecnologías
+    - Arquitectura desacoplada: Frontend y Backend desplegados separadamente.
+    - Frontend: Vue 3, Vite, Tailwind CSS. Deploy en Netlify.
+    - Backend: Python, Flask, SQLAlchemy. Deploy en Render.
+    - Bases de datos: SQLite en desarrollo; PostgreSQL en producción.
 
-## Características
+    ### Patrones de diseño y estructura
+    El backend sigue un **patrón en capas** (Layered Architecture) que separa la capa de
+    presentación (endpoints/API), la capa de negocio (servicios) y la capa de acceso a datos.
+    Adicionalmente se emplea el **Patrón Repositorio** para abstraer la lógica de persistencia
+    y facilitar el soporte de múltiples motores (SQLite en desarrollo y PostgreSQL en producción).
+    La API se expone siguiendo principios REST, manteniendo una clara separación de
+    responsabilidades entre capas.
 
-- Registro de nuevos usuarios.
-- Autenticación de usuarios existentes.
-- Hash de contraseñas para un almacenamiento seguro.
+    ### Stack resumido
+    - **Frontend:** Vue 3, Vite, Tailwind
+    - **Backend:** Python, Flask, SQLAlchemy
+    - **DB:** SQLite (dev), PostgreSQL (prod)
+    - **Deploy:** Netlify (frontend), Render (backend)
 
-## Stack Tecnológico
+    ## Endpoints principales
+    Ejemplos y comportamiento esperado:
 
-- **Backend:** Flask
-- **Base de Datos:** PostgreSQL (en producción), SQLite (en desarrollo)
-- **ORM:** SQLAlchemy
-- **Despliegue:** Gunicorn
-- **CORS:** Flask-Cors
+    - `POST /api/usuarios/login` — Autenticar usuario.
+        - Request: `{ "email": "", "contrasena": "" }`
+        - 200: `{ "token": "JWT_string" }`
+        - 401: credenciales inválidas; 403: cuenta bloqueada
 
-## Configuración del Proyecto
+    - `GET /api/perfil` — Obtener info del usuario autenticado (header Authorization)
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone https://github.com/xGunTherx0/entrenaprochile-api.git
-    cd entrenaprochile-api
-    ```
+    - `GET /api/rutinas` — Listar rutinas públicas
 
-2.  **Crear un entorno virtual:**
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # En Windows: venv\Scripts\activate
-    ```
+    - `POST /api/mediciones` — Registrar mediciones: `{ "peso": 75.5, "altura": 1.75 }`
 
-3.  **Instalar dependencias:**
-    ```bash
-    pip install -r requirements.txt
-    pip install -r backend/requirements.txt
-    ```
+    ## Requerimientos
 
-## Configuración de la Base de Datos
+    ### Funcionales (resumen)
+    - RF01: Inicio de sesión con email y contraseña
+    - RF02: Bloqueo tras 3 intentos fallidos (30 minutos)
+    - RF03: Redirección según rol (cliente/entrenador/admin)
+    - RF04: Panel Admin (CRUD de usuarios y gestión de contenido)
+    - RF05: Panel Entrenador (CRUD de rutinas/planes)
+    - RF06: Panel Cliente (explorar y seleccionar rutinas/planes)
+    - RF08: Generación de dieta basada en TMB
 
--   **Desarrollo:** La aplicación utiliza una base de datos SQLite por defecto llamada `entrenapro.db` que se creará en el directorio `database`.
--   **Producción:** La aplicación está configurada para usar una base de datos PostgreSQL. La URL de conexión se debe proporcionar a través de la variable de entorno `DATABASE_URL`.
+    ### No funcionales (resumen)
+    - Responsividad (móvil → escritorio)
+    - Seguridad: Bcrypt para contraseñas, JWT para autenticación, HTTPS obligatorio
+    - Rendimiento: 95% respuestas < 500 ms bajo 100 usuarios concurrentes
+    - Mantenibilidad: diseño en capas y documentación
 
-## Cómo Ejecutar la Aplicación
+    ## Roles y equipo
+    - Equipo CFMC: Carlos Cancino (Arquitecto / Backend) y Felipe Marchant (UX/UI / Frontend)
+    - Roles habituales: Arquitecto, Desarrollador Backend, Desarrollador Frontend, Diseñador UX/UI, Líder/QA
 
-Para ejecutar la aplicación en modo de desarrollo, puedes usar el servidor de desarrollo de Flask:
+    ## Migración SQLite → PostgreSQL (análisis)
+    - Problema observado: operaciones permitidas por SQLite que PostgreSQL rechaza
+        (ej. establecer `usuario_id = NULL` cuando la columna tiene restricción `NOT NULL`).
+    - Lección: mantener el esquema y las restricciones de producción en el entorno de
+        desarrollo, adaptar la lógica de negocio y añadir pruebas que cubran diferencias entre motores.
 
-```bash
-export FLASK_APP=backend/app.py # En Windows: set FLASK_APP=backend/app.py
-flask run
-```
+    ## Diagramas y artefactos
+    El documento original incluye diagramas (BD, clases, secuencias y casos de uso). Para
+    ver los diagramas, abre `Documentacion cfmc.docx` en la raíz del proyecto.
 
-## Endpoints de la API
+    ## Conclusiones y próximos pasos
+    - Integrar módulo de pagos (ej. Stripe) para monetización.
+    - Añadir módulo de chat en tiempo real.
+    - Mejorar panel de administración con analíticas y reportes.
 
-### Registro de Usuario
+    ---
 
--   **URL:** `/api/usuarios/register`
--   **Método:** `POST`
--   **Body (JSON):**
-    ```json
-    {
-      "email": "usuario@example.com",
-      "nombre": "Nombre de Usuario",
-      "password": "tu_contraseña"
-    }
-    ```
+    Documento convertido desde `Documentacion cfmc.docx` (26 sept 2025) — autores: Luis Felipe Marchant y Carlos Cancino.
 
-### Inicio de Sesión de Usuario
+    Si quieres que haga un resumen ejecutivo, que agregue diagramas en la carpeta `docs/` o que
+    commitée y haga push del README, indícalo y lo ejecuto.
 
--   **URL:** `/api/usuarios/login`
--   **Método:** `POST`
--   **Body (JSON):**
-    ```json
-    {
-      "email": "usuario@example.com",
-      "password": "tu_contraseña"
-    }
-    ```

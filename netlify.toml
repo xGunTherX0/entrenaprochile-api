@@ -1,4 +1,13 @@
 [build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[context.production.environment]
+  VITE_GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"
+  VITE_API_URL = "https://your-backend.onrender.com"
+  VITE_ADMIN_EMAIL = "admin@example.com"
+[build]
   base    = "frontend"
   publish = "dist"
   command = "npm install && npm run build"
