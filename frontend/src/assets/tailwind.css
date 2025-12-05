@@ -9,8 +9,10 @@
 	/* Color tokens (hex & HSL) - adjust these to change the site's palette */
 	--color-primary: #1ED66C; /* principal (verde) */
 	--color-secondary: #9933FF; /* secundario (morado) */
-	--color-blue: #2563EB; /* blue-600 */
-	--color-indigo: #4F46E5; /* indigo-600 */
+	--color-blue-600: #2563EB; /* blue-600 */
+	--color-indigo-600: #4F46E5; /* indigo-600 */
+	--color-indigo-700: #4338CA; /* indigo-700 */
+	--color-indigo-800: #3730A3; /* indigo-800 */
 	--bg: 0 0% 96%; /* light page background (H,S,L for hsl(var(--bg))) */
 	--surface: 18 18% 12%;
 	--muted: 220 10% 70%;
