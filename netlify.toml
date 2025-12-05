@@ -1,19 +1,19 @@
 [build]
   base = "frontend"
-  command = "npm run build"
+  command = "npm ci && npm run build"
   publish = "dist"
+
+[dev]
+  command = "npm run dev"
+  port = 5173
 
 [context.production.environment]
   VITE_GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"
   VITE_API_URL = "https://your-backend.onrender.com"
   VITE_ADMIN_EMAIL = "admin@example.com"
-[build]
-  base    = "frontend"
-  publish = "dist"
-  command = "npm install && npm run build"
 
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  # No usar `force = true` para evitar reescribir rutas de archivos estáticos
+
