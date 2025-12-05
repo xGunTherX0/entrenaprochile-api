@@ -281,6 +281,28 @@ export default {
     } catch (e) {
       // ignore
     }
+    // Optional: suppress noisy GSI/COOP console error in production when explicitly enabled.
+    // Set `VITE_SUPPRESS_GSI_CONSOLE_ERRORS=1` in Netlify env to enable.
+    try {
+      const suppress = import.meta.env.VITE_SUPPRESS_GSI_CONSOLE_ERRORS === '1' || import.meta.env.VITE_SUPPRESS_GSI_CONSOLE_ERRORS === 'true'
+      if (suppress && typeof console !== 'undefined' && console.error) {
+        const _origErr = console.error.bind(console)
+        console.error = function (...args) {
+          try {
+            const msg = (args && args[0]) ? String(args[0]) : ''
+            if (msg.includes('Cross-Origin-Opener-Policy policy would block the window.postMessage call') || msg.includes('A listener indicated an asynchronous response by returning true')) {
+              // swallow this known benign message
+              return
+            }
+          } catch (e) {
+            // if anything goes wrong, fall through to original
+          }
+          _origErr(...args)
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     // Dynamically load Google Identity Services and render button
     this.loadGsiScript()
   }
