@@ -38,7 +38,7 @@
       </div>
       <div v-if="rutina.link_url" class="flex items-center space-x-3 mb-4">
         <a :href="rutina.link_url" target="_blank" rel="noopener noreferrer" class="px-3 py-2 bg-green-600 text-white rounded">Abrir enlace</a>
-        <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(rutina.link_url)}`" alt="QR" class="w-24 h-24 border rounded" />
+        <img v-if="!isCliente" :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(rutina.link_url)}`" alt="QR" class="w-24 h-24 border rounded" />
       </div>
 
       <!-- "Solicitar rutina" button removed per request -->
@@ -50,6 +50,7 @@
 
 <script>
 import api from '../utils/api.js'
+import auth from '../utils/auth.js'
 
 export default {
   name: 'ClienteRutina',
@@ -58,7 +59,7 @@ export default {
       rutina: null,
       loading: true,
       error: null,
-      // saving/localSaved removed: this view no longer offers "Solicitar rutina"
+      hasAccepted: false
     }
   },
   methods: {
@@ -77,11 +78,32 @@ export default {
       const body = await res.json()
       if (!res.ok) throw new Error(body.error || 'Error obteniendo rutina')
       this.rutina = body
+
+      // If user is a cliente, check their solicitudes to see if this rutina was accepted
+      if (this.isCliente) {
+        try {
+          const sres = await api.get('/api/solicitudes/mis')
+          if (sres.ok) {
+            const all = await sres.json()
+            if (Array.isArray(all)) {
+              const found = all.find(s => s && Number(s.rutina_id) === Number(id) && s.estado === 'aceptado')
+              this.hasAccepted = !!found
+            }
+          }
+        } catch (e) {
+          // ignore solicitudes fetch failures; keep hasAccepted false
+        }
+      }
+
     } catch (err) {
       this.error = err.message
     } finally {
       this.loading = false
-      // no localSaved handling needed any more
+    }
+  },
+  computed: {
+    isCliente() {
+      return auth.getRole && auth.getRole() === 'cliente'
     }
   }
 }

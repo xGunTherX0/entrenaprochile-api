@@ -23,12 +23,12 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.nombre }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ u.role }} <span v-if="u.activo===false" class="text-sm text-red-600">(desactivado)</span></td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-              <button v-if="u.role !== 'entrenador' && u.role !== 'admin'" @click="promote(u.id)" class="px-2 py-1 bg-indigo-500 text-white rounded">Promover</button>
-              <button v-if="u.role === 'entrenador'" @click="demoteToClient(u.id)" class="px-2 py-1 bg-purple-500 text-white rounded">Degradar</button>
-              <button @click="changeRole(u.id)" class="px-2 py-1 bg-gray-200 text-gray-800 rounded">Cambiar rol</button>
-              <button v-if="u.activo !== false" @click="deactivate(u.id)" class="px-2 py-1 bg-yellow-400 text-white rounded">Desactivar</button>
-              <button v-else @click="reactivate(u.id)" class="px-2 py-1 bg-green-600 text-white rounded">Reactivar</button>
-              <button @click="remove(u.id)" class="px-2 py-1 bg-red-600 text-white rounded">Borrar</button>
+              <button v-if="u.role !== 'entrenador' && u.role !== 'admin'" @click="promote(u.id)" class="px-2 py-1 bg-indigo-500 text-white rounded">Promover a entrenador</button>
+              <button v-if="u.role === 'entrenador'" @click="demoteToClient(u.id)" class="px-2 py-1 bg-purple-500 text-white rounded">Cambiar a Cliente</button>
+              <!-- Cambiar rol button removed globally per request -->
+              <button v-if="u.role !== 'admin' && u.activo !== false" @click="deactivate(u.id)" class="px-2 py-1 bg-yellow-400 text-white rounded">Desactivar</button>
+              <button v-if="u.role !== 'admin' && u.activo === false" @click="reactivate(u.id)" class="px-2 py-1 bg-green-600 text-white rounded">Reactivar</button>
+              <button v-if="u.role !== 'admin'" @click="remove(u.id)" class="px-2 py-1 bg-red-600 text-white rounded">Borrar</button>
             </td>
           </tr>
         </tbody>
@@ -92,8 +92,9 @@ export default {
     },
     async promote(id) {
       this.error = null
+      if (!confirm('Confirmar promover este usuario a entrenador?')) return
       try {
-  const res = await api.post(`/api/admin/usuarios/${id}/promote`, null)
+        const res = await api.post(`/api/admin/usuarios/${id}/promote`, null)
         if (!res.ok) {
           const j = await res.json().catch(() => ({}))
           this.error = j.error || 'Error promoviendo usuario'
@@ -149,7 +150,7 @@ export default {
     },
     async demoteToClient(id) {
       this.error = null
-      if (!confirm('Confirmar degradar este entrenador a cliente?')) return
+      if (!confirm('Confirmar cambiar este entrenador a cliente?')) return
       try {
         const res = await api.post(`/api/admin/usuarios/${id}/set_role`, { role: 'cliente' })
         if (!res.ok) {

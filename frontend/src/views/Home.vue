@@ -9,9 +9,9 @@
             <div class="max-w-2xl text-white">
               <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">Bienvenido a EntrenaProChile</h1>
               <p class="text-lg md:text-xl text-gray-200/85 mb-8">La mejor plataforma para entrenadores y deportistas. Conecta, crea rutinas y monetiza tu trabajo.</p>
-              <div class="flex items-center gap-4">
-                <router-link to="/login" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-400 to-green-400 text-black font-semibold rounded-full shadow focus-ring">Iniciar sesión</router-link>
-                <router-link to="/register" class="inline-flex items-center gap-2 px-5 py-3 border border-white/10 text-white rounded-full hover:bg-white/5">Regístrate</router-link>
+              <div class="flex items-center gap-4 flex-wrap">
+                <button @click="goToIniciar" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-400 to-green-400 text-black font-semibold rounded-full shadow focus-ring" type="button">Continúa con Google</button>
+                <button @click="goToRegistrarse" class="inline-flex items-center gap-2 px-5 py-3 border border-cyan-300 text-cyan-200 font-semibold rounded-full shadow focus-ring bg-white/5 hover:bg-white/10" type="button">Regístrate</button>
               </div>
             </div>
           </div>
@@ -108,6 +108,35 @@
 <script>
 export default {
   name: 'Home',
+  methods: {
+    goGoogleLogin() {
+      try {
+        this.$router.push('/google-login')
+      } catch (e) {
+        // Fallback: change location
+        window.location.href = '/google-login'
+      }
+    }
+    ,
+    goToIniciar() {
+      console.log('goToIniciar clicked')
+      try {
+        this.$router.push('/iniciar')
+      } catch (e) {
+        console.warn('router.push failed, falling back to location.href', e)
+        window.location.href = '/iniciar'
+      }
+    },
+    goToRegistrarse() {
+      console.log('goToRegistrarse clicked')
+      try {
+        this.$router.push('/registrarse')
+      } catch (e) {
+        console.warn('router.push failed, falling back to location.href', e)
+        window.location.href = '/registrarse'
+      }
+    }
+  },
   data() {
     return {
       activeIndex: 0,

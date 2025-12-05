@@ -12,6 +12,8 @@ import AdminMetricas from '../views/admin/Metricas.vue'
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/login', name: 'Login', component: Login },
+  { path: '/iniciar', name: 'Iniciar', component: Login, props: { mode: 'login' } },
+  { path: '/registrarse', name: 'Registrarse', component: Login, props: { mode: 'register' } },
 
   { path: '/entrenador', redirect: '/entrenador/rutinas' },
   { path: '/entrenador/rutinas', name: 'EntrenadorRutinas', component: EntrenadorDashboard },
@@ -43,7 +45,8 @@ const routes = [
   },
 
   { path: '/home', component: Home },
-  { path: '/register', name: 'Register', component: () => import('../views/Register.vue') },
+  // Registration UI disabled: redirect to login so only Google sign-in is used
+  { path: '/register', redirect: '/login' },
   { path: '/forgot', name: 'Forgot', component: () => import('../views/Forgot.vue') },
   { path: '/reset', name: 'ResetPassword', component: () => import('../views/ResetPassword.vue') },
   { path: '/change-password', name: 'ChangePassword', component: () => import('../views/ChangePassword.vue') },

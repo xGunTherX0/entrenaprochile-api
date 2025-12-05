@@ -11,7 +11,10 @@ import AdminMetricas from "/src/views/admin/Metricas.vue"
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
-  { path: '/login', name: 'Login', component: Login },
+  { path: '/login', name: 'Login', component: Login, props: { mode: 'register' } },
+  { path: '/iniciar', name: 'Iniciar', component: Login, props: { mode: 'login' } },
+  { path: '/registrarse', name: 'Registrarse', component: Login, props: { mode: 'register' } },
+  { path: '/google-login', name: 'GoogleLogin', component: () => import("/src/views/GoogleAuth.vue") },
 
   { path: '/entrenador', redirect: '/entrenador/rutinas' },
   { path: '/entrenador/rutinas', name: 'EntrenadorRutinas', component: EntrenadorDashboard },
