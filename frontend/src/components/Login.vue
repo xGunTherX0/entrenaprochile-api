@@ -274,6 +274,13 @@ export default {
     }
   },
   mounted() {
+    // Debug: print the build-time client id embedded by Vite
+    try {
+      // eslint-disable-next-line no-console
+      console.log('DEBUG: VITE_GOOGLE_CLIENT_ID =', import.meta.env.VITE_GOOGLE_CLIENT_ID)
+    } catch (e) {
+      // ignore
+    }
     // Dynamically load Google Identity Services and render button
     this.loadGsiScript()
   }
