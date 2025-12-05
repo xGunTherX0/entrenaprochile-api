@@ -11,7 +11,7 @@
   # Environment variables should be configured in Netlify UI (Site settings → Build & deploy → Environment).
   # Do NOT store secrets (client IDs or API keys) directly in the repo. Set the following variables in Netlify:
   # - VITE_GOOGLE_CLIENT_ID
-  # - VITE_API_URL
+  # - VITE_API_BASE (ej. https://entrenaprochile-api.onrender.com)
   # - VITE_ADMIN_EMAIL
 
 [[redirects]]
