@@ -1036,6 +1036,53 @@ def api_root():
     return jsonify({'api': 'ok'}), 200
 
 
+@app.route('/api/_diag/google', methods=['GET'])
+def diag_google():
+    """Diagnostic endpoint to check Google sign-in configuration.
+
+    Returns masked presence of `GOOGLE_CLIENT_ID`, whether the google-auth
+    libraries were importable at startup, and the installed `google-auth`
+    package version when available. Safe for temporary use during debugging.
+    """
+    try:
+        g = os.getenv('GOOGLE_CLIENT_ID')
+        masked = None
+        if g:
+            try:
+                masked = (g[:4] + '...' + g[-4:]) if len(g) > 8 else 'set'
+            except Exception:
+                masked = 'set'
+
+        # Try to determine installed google-auth version if possible
+        version = None
+        try:
+            # Python 3.8+: importlib.metadata
+            try:
+                from importlib import metadata as _metadata
+                version = _metadata.version('google-auth')
+            except Exception:
+                # fallback to pkg_resources
+                try:
+                    import pkg_resources as _pr
+                    version = _pr.get_distribution('google-auth').version
+                except Exception:
+                    version = None
+        except Exception:
+            version = None
+
+        info = {
+            'google_client_id_set': bool(g),
+            'google_client_id_masked': masked,
+            'google_auth_importable_at_startup': bool(_GOOGLE_AUTH_AVAILABLE),
+            'google_auth_version': version,
+        }
+        app.logger.info('diag_google: %s', {k: info[k] for k in info if k != 'google_client_id_masked'})
+        return jsonify(info), 200
+    except Exception:
+        app.logger.exception('diag_google failed')
+        return jsonify({'error': 'diag failed'}), 500
+
+
 @app.route('/api/mediciones', methods=['POST'])
 @jwt_required
 def crear_medicion():
