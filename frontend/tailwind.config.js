@@ -13,6 +13,10 @@ module.exports = {
         'secondary': 'var(--color-secondary)',
         'brand': 'var(--color-primary)',
         'accent': 'var(--color-secondary)'
+      ,
+      // Provide mappings for common blue/indigo utilities used across the app
+      'blue': 'var(--color-blue)',
+      'indigo': 'var(--color-indigo)'
       }
     },
   },
