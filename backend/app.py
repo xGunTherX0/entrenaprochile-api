@@ -274,6 +274,65 @@ def _api_options(subpath):
         app.logger.exception('Error while handling explicit OPTIONS for /api/%s', subpath)
         return ('', 500)
 
+
+# Specific OPTIONS handlers for known endpoints that the frontend frequently preflights.
+# These are added because some environments may route OPTIONS differently; having
+# explicit routes increases the chance of matching the preflight and returning CORS headers.
+def _build_preflight_response():
+    from flask import make_response
+    resp = make_response(('', 200))
+    origin = request.headers.get('Origin')
+    allowed = cors_origins_config
+    if allowed == '*':
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+    else:
+        try:
+            if isinstance(allowed, (list, tuple)):
+                if origin and origin in allowed:
+                    resp.headers['Access-Control-Allow-Origin'] = origin
+                else:
+                    resp.headers['Access-Control-Allow-Origin'] = allowed[0] if allowed else ''
+            else:
+                resp.headers['Access-Control-Allow-Origin'] = str(allowed)
+        except Exception:
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+    if cors_supports_credentials:
+        resp.headers['Access-Control-Allow-Credentials'] = 'true'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    resp.headers['Access-Control-Allow-Headers'] = app.config.get('CORS_HEADERS', 'Content-Type,Authorization')
+    return resp
+
+
+def _log_preflight(subpath):
+    try:
+        logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+        os.makedirs(logs_dir, exist_ok=True)
+        fname = os.path.join(logs_dir, 'preflight.log')
+        with open(fname, 'a', encoding='utf-8') as fh:
+            fh.write('----\n')
+            fh.write(f'TIME: {datetime.utcnow().isoformat()}\n')
+            fh.write(f'PATH: /api/{subpath}\n')
+            fh.write(f'ORIGIN: {request.headers.get("Origin")}\n')
+            fh.write('HEADERS:\n')
+            for k, v in request.headers.items():
+                fh.write(f'  {k}: {v}\n')
+    except Exception:
+        app.logger.exception('failed to write preflight log')
+
+
+@app.route('/api/usuarios/login', methods=['OPTIONS'])
+def options_login():
+    _log_preflight('usuarios/login')
+    app.logger.debug('OPTIONS /api/usuarios/login handled by explicit route')
+    return _build_preflight_response()
+
+
+@app.route('/api/usuarios/google_signin', methods=['OPTIONS'])
+def options_google_signin():
+    _log_preflight('usuarios/google_signin')
+    app.logger.debug('OPTIONS /api/usuarios/google_signin handled by explicit route')
+    return _build_preflight_response()
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.auth import generate_token, jwt_required
 from sqlalchemy import text
