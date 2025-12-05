@@ -1,4 +1,4 @@
-@tailwind base;
+	@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -6,11 +6,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
 
 :root {
-	--bg: 0 0% 96%; /* light page background */
+	/* Color tokens (hex & HSL) - adjust these to change the site's palette */
+	--color-primary: #1ED66C; /* principal (verde) */
+	--color-secondary: #9933FF; /* secundario (morado) */
+	--bg: 0 0% 96%; /* light page background (H,S,L for hsl(var(--bg))) */
 	--surface: 18 18% 12%;
 	--muted: 220 10% 70%;
-	--brand: 154 72% 45%; /* green */
-	--accent: 190 85% 45%; /* cyan */
+	--brand: 154 72% 45%; /* legacy HSL brand, kept for backward compat */
+	--accent: 190 85% 45%; /* legacy HSL accent */
 	--radius-lg: 14px;
 }
 
