@@ -11,7 +11,6 @@
       </ul>
       <div class="mt-6">
         <div class="space-y-2">
-          <button @click="$router.push('/change-password')" class="px-3 py-2 bg-white/10 text-white rounded w-full">Cambiar contraseña</button>
           <button @click="logout" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded w-full">Cerrar Sesión</button>
         </div>
       </div>

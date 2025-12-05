@@ -7,16 +7,16 @@
       <form @submit.prevent="submit">
         <div class="mb-3">
           <label class="text-sm">Email</label>
-          <input v-model="email" type="email" required class="w-full mt-2 px-4 py-3 rounded-xl bg-white/5" />
+          <input v-model="email" type="email" required class="w-full mt-2 px-4 py-3 rounded-xl bg-white/5 focus:outline-none focus:ring-2 focus:ring-green-400 focus-visible:outline-2 focus-visible:outline-green-400" />
         </div>
         <div class="flex items-center justify-between">
-          <button :disabled="sending" class="px-4 py-2 bg-green-500 rounded">{{ sending ? 'Enviando...' : 'Enviar' }}</button>
+          <button :disabled="sending" class="px-4 py-2 bg-green-500 rounded disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-green-300">{{ sending ? 'Enviando...' : 'Enviar' }}</button>
           <router-link to="/login" class="text-sm text-gray-300">Volver al login</router-link>
         </div>
       </form>
 
       <div v-if="info" class="mt-4 text-sm text-gray-200 bg-white/5 p-3 rounded">{{ info }}</div>
-      <div v-if="token" class="mt-4 text-sm text-yellow-200 bg-black/30 p-3 rounded">Token (solo desarrollo): {{ token }}</div>
+      <div v-if="token && showTokenDev" class="mt-4 text-sm text-yellow-200 bg-black/30 p-3 rounded">Token (solo desarrollo): {{ token }}</div>
     </div>
   </div>
 </template>
@@ -24,7 +24,7 @@
 <script>
 import api from '../utils/api.js'
 export default {
-  data() { return { email: '', sending: false, info: '', token: '' } },
+  data() { return { email: '', sending: false, info: '', token: '', showTokenDev: import.meta.env.DEV } },
   methods: {
     async submit() {
       this.sending = true; this.info = ''; this.token = '';

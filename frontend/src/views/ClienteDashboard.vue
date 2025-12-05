@@ -1,17 +1,16 @@
 <template>
   <div class="min-h-screen flex bg-gray-50">
-    <nav class="w-64 bg-white border-r p-4">
-      <h2 class="text-xl font-bold mb-4">Cliente</h2>
+    <nav class="w-64 bg-blue-600 text-white p-6 shadow-lg">
+      <h2 class="text-xl font-bold mb-6 text-white">Cliente</h2>
       <ul>
-  <li class="mb-2"><button @click="select('explorar')" :class="{'text-blue-600 font-semibold': activePanel==='explorar'}" class="text-left w-full">Explorar Rutinas</button></li>
-  <li class="mb-2"><button @click="select('misrutinas')" :class="{'text-blue-600 font-semibold': activePanel==='misrutinas'}" class="text-left w-full">Mis Rutinas</button></li>
-  <li class="mb-2"><button @click="select('planes')" :class="{'text-blue-600 font-semibold': activePanel==='planes'}" class="text-left w-full">Mis Planes Nutricionales</button></li>
-        <li class="mb-2"><button @click="select('mediciones')" :class="{'text-blue-600 font-semibold': activePanel==='mediciones'}" class="text-left w-full">Registro de Mediciones</button></li>
+        <li class="mb-2"><button @click="select('explorar')" :class="{'bg-blue-700/60 text-white font-semibold': activePanel==='explorar'}" class="text-left block w-full py-2 rounded">Explorar Rutinas</button></li>
+        <li class="mb-2"><button @click="select('misrutinas')" :class="{'bg-blue-700/60 text-white font-semibold': activePanel==='misrutinas'}" class="text-left block w-full py-2 rounded">Mis Rutinas</button></li>
+        <li class="mb-2"><button @click="select('planes')" :class="{'bg-blue-700/60 text-white font-semibold': activePanel==='planes'}" class="text-left block w-full py-2 rounded">Mis Planes Nutricionales</button></li>
+        <li class="mb-2"><button @click="select('mediciones')" :class="{'bg-blue-700/60 text-white font-semibold': activePanel==='mediciones'}" class="text-left block w-full py-2 rounded">Registro de Mediciones</button></li>
       </ul>
       <div class="mt-6">
         <div class="space-y-2">
-          <button @click="$router.push('/change-password')" class="px-3 py-2 bg-gray-200 text-gray-800 rounded w-full">Cambiar contraseña</button>
-          <button @click="logout" class="px-3 py-2 bg-red-500 text-white rounded w-full">Cerrar Sesión</button>
+          <button @click="logout" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded w-full">Cerrar Sesión</button>
         </div>
       </div>
     </nav>

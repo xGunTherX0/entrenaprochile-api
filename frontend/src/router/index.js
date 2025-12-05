@@ -49,7 +49,6 @@ const routes = [
   { path: '/register', redirect: '/login' },
   { path: '/forgot', name: 'Forgot', component: () => import('../views/Forgot.vue') },
   { path: '/reset', name: 'ResetPassword', component: () => import('../views/ResetPassword.vue') },
-  { path: '/change-password', name: 'ChangePassword', component: () => import('../views/ChangePassword.vue') },
   // Keep legacy top-level routes but redirect to the cliente-layout variants
   { path: '/entrenadores', redirect: '/cliente/entrenadores' },
   { path: '/entrenadores/:id', redirect: to => `/cliente/entrenadores/${to.params.id}` },

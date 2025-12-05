@@ -1,37 +1,10 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-black text-white p-6">
     <div class="w-full max-w-2xl">
-      <div v-if="!role" class="bg-gray-900/60 rounded-xl p-8 shadow-lg text-center">
-        <h2 class="text-2xl font-bold mb-4">¿Eres Entrenador o Deportista?</h2>
-        <div class="flex items-center justify-center space-x-6 mt-6">
-          <button @click="choose('cliente')" class="px-6 py-3 bg-white text-black rounded-full">Deportista</button>
-          <button @click="choose('entrenador')" class="px-6 py-3 border border-white/20 rounded-full">Entrenador</button>
-        </div>
-      </div>
-
-      <div v-else class="bg-gray-900/60 rounded-xl p-8 shadow-lg">
-        <h2 class="text-2xl font-bold mb-4">Crear cuenta — {{ roleLabel }}</h2>
-        <form @submit.prevent="submit">
-          <div class="mb-3">
-            <label class="block text-sm mb-1">Nombre</label>
-            <input v-model="nombre" class="w-full px-3 py-2 rounded bg-black/20" required />
-          </div>
-          <div class="mb-3">
-            <label class="block text-sm mb-1">Email</label>
-            <input v-model="email" type="email" class="w-full px-3 py-2 rounded bg-black/20" required />
-          </div>
-          <div class="mb-3">
-            <label class="block text-sm mb-1">Contraseña</label>
-            <input v-model="password" type="password" class="w-full px-3 py-2 rounded bg-black/20" required minlength="6" />
-          </div>
-          <div class="flex items-center justify-between">
-            <div>
-              <button type="button" @click="role=null" class="px-4 py-2 border rounded mr-2">Volver</button>
-              <button type="submit" :disabled="saving" class="px-4 py-2 bg-green-500 rounded">{{ saving ? 'Creando...' : 'Crear cuenta' }}</button>
-            </div>
-            <div v-if="msg" class="text-sm text-green-300">{{ msg }}</div>
-          </div>
-        </form>
+      <div class="bg-gray-900/60 rounded-xl p-8 shadow-lg text-center">
+        <h2 class="text-2xl font-bold mb-4">Registro deshabilitado</h2>
+        <p class="text-gray-300 mb-4">El registro directo está deshabilitado. Por favor, inicia sesión usando Google desde la página de inicio.</p>
+        <router-link to="/login" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-400 to-green-400 text-black font-semibold rounded-full shadow">Ir a Iniciar sesión</router-link>
       </div>
     </div>
   </div>

@@ -15,6 +15,11 @@ export default defineConfig({
   // Dev proxy: redirige llamadas a /api al backend objetivo para evitar CORS en desarrollo.
   // Usa la variable de entorno VITE_API_BASE si está definida, o http://localhost:5000 por defecto.
   server: {
+    // Allow dev server to set helpful headers so Google Identity iframe
+    // can communicate via postMessage during local development.
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_API_BASE || 'http://localhost:5000',
