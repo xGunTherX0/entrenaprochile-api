@@ -206,6 +206,20 @@ def _ensure_cors_headers(response):
     try:
         # Only modify API responses
         if request.path and request.path.startswith('/api/'):
+            # Temporary emergency override: allow all origins to diagnose CORS issues.
+            # This is intentionally permissive and should be reverted once the
+            # root cause is fixed in Render/CF configuration.
+            try:
+                response.headers.setdefault('Access-Control-Allow-Origin', '*')
+                if cors_supports_credentials:
+                    response.headers.setdefault('Access-Control-Allow-Credentials', 'true')
+                response.headers.setdefault('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                response.headers.setdefault('Access-Control-Allow-Headers', app.config.get('CORS_HEADERS', 'Content-Type,Authorization'))
+                app.logger.debug('Emergency CORS override applied for %s', request.path)
+                return response
+            except Exception:
+                app.logger.exception('Emergency CORS override failed')
+                # fall through to normal logic
             origin = request.headers.get('Origin')
             # Determine allowed origin value
             allowed = cors_origins_config
