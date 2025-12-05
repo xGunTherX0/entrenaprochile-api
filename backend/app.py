@@ -3044,35 +3044,52 @@ def admin_delete_usuario(usuario_id):
                 # transactions in the app environment (this avoids SQLAlchemy
                 # "A transaction is already begun on this Session." errors).
                 with db.engine.begin() as conn:
+                    # Helper to execute a statement inside a SAVEPOINT so a single
+                    # failing DELETE (e.g. due to missing table or FK) does not
+                    # abort the whole outer transaction. If the table is missing
+                    # we ignore the error; other errors are re-raised.
+                    def _exec_savepoint(sql, params=None):
+                        try:
+                            with conn.begin_nested():
+                                if params is None:
+                                    conn.execute(text(sql))
+                                else:
+                                    conn.execute(text(sql), params)
+                        except Exception as e:
+                            msg = str(e).lower()
+                            # Ignore missing relation/table errors (common on prod)
+                            if 'does not exist' in msg or 'undefinedtable' in msg or 'relation' in msg and 'does not exist' in msg:
+                                return
+                            raise
                     # If entrenador exists, remove related content using subqueries so
                     # we don't need to pass Python lists into SQL parameters.
                     if entrenador:
                         ent_id = entrenador.id
 
                         # Remove solicitudes that reference plans or rutinas owned by this entrenador
-                        conn.execute(text("DELETE FROM solicitudes_plan WHERE plan_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)"), {'eid': ent_id})
-                        conn.execute(text("DELETE FROM solicitudes_plan WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        _exec_savepoint("DELETE FROM solicitudes_plan WHERE plan_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)", {'eid': ent_id})
+                        _exec_savepoint("DELETE FROM solicitudes_plan WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)", {'eid': ent_id})
 
                         # Remove cliente_rutina entries referring to rutinas owned by this entrenador
-                        conn.execute(text("DELETE FROM cliente_rutina WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        _exec_savepoint("DELETE FROM cliente_rutina WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)", {'eid': ent_id})
 
                         # Remove content reviews for plans and rutinas owned by this entrenador
-                        conn.execute(text("DELETE FROM content_review WHERE tipo = 'plan' AND content_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)"), {'eid': ent_id})
-                        conn.execute(text("DELETE FROM content_review WHERE tipo = 'rutina' AND content_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        _exec_savepoint("DELETE FROM content_review WHERE tipo = 'plan' AND content_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)", {'eid': ent_id})
+                        _exec_savepoint("DELETE FROM content_review WHERE tipo = 'rutina' AND content_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)", {'eid': ent_id})
 
                         # Delete the actual content rows (plans and rutinas)
-                        conn.execute(text('DELETE FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id})
-                        conn.execute(text('DELETE FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id})
+                        _exec_savepoint('DELETE FROM planes_alimenticios WHERE entrenador_id = :eid', {'eid': ent_id})
+                        _exec_savepoint('DELETE FROM rutinas WHERE entrenador_id = :eid', {'eid': ent_id})
 
                         # Delete entrenador row
-                        conn.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
+                        _exec_savepoint('DELETE FROM entrenadores WHERE usuario_id = :uid', {'uid': user.id})
 
                     # Remove any solicitudes or cliente_rutina that reference this user's cliente rows
-                    conn.execute(text("DELETE FROM solicitudes_plan WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)"), {'uid': user.id})
-                    conn.execute(text("DELETE FROM cliente_rutina WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)"), {'uid': user.id})
+                    _exec_savepoint("DELETE FROM solicitudes_plan WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)", {'uid': user.id})
+                    _exec_savepoint("DELETE FROM cliente_rutina WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)", {'uid': user.id})
 
                     # delete cliente row if exists (raw DELETE to avoid ORM cascade/UPDATE)
-                    conn.execute(text('DELETE FROM clientes WHERE usuario_id = :uid'), {'uid': user.id})
+                    _exec_savepoint('DELETE FROM clientes WHERE usuario_id = :uid', {'uid': user.id})
 
                     # Remove any password reset tokens referencing this usuario (FK -> usuarios.id)
                     # In some production DBs this table may not exist (migrations not applied).
@@ -3089,7 +3106,7 @@ def admin_delete_usuario(usuario_id):
                             raise
 
                     # finally delete the user row with raw SQL to avoid ORM side-effects
-                    conn.execute(text('DELETE FROM usuarios WHERE id = :uid'), {'uid': user.id})
+                    _exec_savepoint('DELETE FROM usuarios WHERE id = :uid', {'uid': user.id})
 
                 # Expire the session identity map so further ORM queries see DB changes
                 try:
