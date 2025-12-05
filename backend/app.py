@@ -438,27 +438,10 @@ def login_usuario():
         if not user:
             return jsonify({'error': 'invalid credentials'}), 401
 
-        # Check lockout state
-        try:
-            from datetime import datetime as _dt
-            if getattr(user, 'locked_until', None) and user.locked_until > _dt.utcnow():
-                return jsonify({'error': 'account locked', 'locked_until': user.locked_until.isoformat()}), 403
-        except Exception:
-            pass
-
+        # Account lockout disabled: do not block users based on failed attempts.
+        # If password is incorrect, simply return invalid credentials without
+        # incrementing failed attempt counters or setting lockout timestamps.
         if not check_password_hash(user.hashed_password, password):
-            # increment failed attempts and possibly lock account
-            try:
-                user.failed_attempts = (getattr(user, 'failed_attempts', 0) or 0) + 1
-                # lock after 3 failed attempts
-                if user.failed_attempts >= 3:
-                    from datetime import datetime as _dt, timedelta as _td
-                    lock_minutes = int(os.getenv('ACCOUNT_LOCK_MINUTES', '15'))
-                    user.locked_until = _dt.utcnow() + _td(minutes=lock_minutes)
-                db.session.add(user)
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
             return jsonify({'error': 'invalid credentials'}), 401
 
         # Determina rol según relaciones (Cliente / Entrenador)
@@ -478,10 +461,12 @@ def login_usuario():
             except Exception:
                 role = getattr(user, '_role_fallback', 'usuario')
 
-        # Reset failed attempts on successful login
+        # Reset failed attempts on successful login (no-op if fields don't exist)
         try:
-            user.failed_attempts = 0
-            user.locked_until = None
+            if hasattr(user, 'failed_attempts'):
+                user.failed_attempts = 0
+            if hasattr(user, 'locked_until'):
+                user.locked_until = None
             db.session.add(user)
             db.session.commit()
         except Exception:
