@@ -589,6 +589,11 @@ def google_signin():
         if not audience:
             return jsonify({'error': 'server_misconfigured', 'detail': 'GOOGLE_CLIENT_ID not set'}), 500
 
+        # Ensure google auth libs are available at runtime
+        if not _GOOGLE_AUTH_AVAILABLE or google_id_token is None or google_auth_requests is None:
+            app.logger.error('google_signin attempted but google-auth library is not available')
+            return jsonify({'error': 'server_misconfigured', 'detail': 'google-auth library not installed on server'}), 500
+
         try:
             idinfo = google_id_token.verify_oauth2_token(raw_token, google_auth_requests.Request(), audience)
         except ValueError as ve:
@@ -3035,7 +3040,14 @@ def admin_delete_usuario(usuario_id):
                 # will roll back and a descriptive error will be returned.
                 entrenador = _safe_entrenador_by_usuario_id(user.id)
 
-                with db.session.begin():
+                # Use a nested transaction (SAVEPOINT) if a transaction is already active
+                # to avoid "A transaction is already begun on this Session" errors.
+                if getattr(db.session, 'in_transaction', None) and db.session.in_transaction():
+                    tx_ctx = db.session.begin_nested()
+                else:
+                    tx_ctx = db.session.begin()
+
+                with tx_ctx:
                     # If entrenador exists, remove related content using raw SQL
                     if entrenador:
                         ent_id = entrenador.id
