@@ -2,7 +2,17 @@
 # It contains various endpoints for user management and routines.
 # Ensure to configure the environment variables before running.
 import os
+# Load .env in development so local env vars (like GOOGLE_CLIENT_ID) are available.
+# This is best-effort: if python-dotenv isn't installed, we silently continue.
+try:
+    from dotenv import load_dotenv
+    # load .env from repo root if present
+    load_dotenv()
+except Exception:
+    pass
 from flask import Flask, jsonify, request
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_auth_requests
 from datetime import datetime
 # Mejor configuración CORS: permitimos los encabezados comunes (Authorization, Content-Type)
 # y soportamos credenciales si es necesario. `CORS_ORIGINS` puede venir desde entorno.
@@ -230,6 +240,23 @@ def _safe_entrenador_by_id(entrenador_id):
 
 @app.route('/api/usuarios/register', methods=['POST'])
 def register_usuario():
+    # Allow explicit disabling of public registration in production via ALLOW_REGISTRATION
+    allow_reg = os.getenv('ALLOW_REGISTRATION', '0').lower() in ('1', 'true', 'yes') or (not DATABASE_URL)
+    if not allow_reg:
+        # If registration disabled, allow only admins to create users via API if they supply a valid admin JWT
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            from backend.auth import decode_token
+            token = auth_header.split(' ', 1)[1]
+            payload = decode_token(token)
+            if payload and payload.get('role') == 'admin':
+                # allow admin-initiated registration
+                pass
+            else:
+                return jsonify({'error': 'registration disabled'}), 403
+        else:
+            return jsonify({'error': 'registration disabled'}), 403
+
     data = request.get_json() or {}
     email = data.get('email')
     nombre = data.get('nombre') or data.get('name') or 'Usuario'
@@ -383,6 +410,147 @@ def forgot_password():
         return jsonify({'message': 'reset token created', 'token': token, 'expires_at': expires.isoformat()}), 200
     except Exception as e:
         app.logger.exception('forgot_password failed')
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return jsonify({'error': 'internal', 'detail': str(e)}), 500
+
+
+@app.route('/api/usuarios/google_signin', methods=['POST'])
+def google_signin():
+    """Sign in or register a user using a Google ID token (GSI).
+
+    Expects JSON body: { id_token: '...' }
+    Uses google-auth to verify JWT signature, issuer, exp, aud.
+    Requires email_verified. Creates Usuario + Cliente si no existen.
+    Devuelve un JWT local y rol.
+    """
+    try:
+        data = request.get_json() or {}
+        raw_token = data.get('id_token')
+        desired_role = (data.get('desired_role') or '').lower()
+        preferred_name = data.get('nombre') or None
+        # Debug/logging: record minimal context to help diagnose production 500s
+        try:
+            # Mask GOOGLE_CLIENT_ID for logs (show only prefix/suffix)
+            _g = os.getenv('GOOGLE_CLIENT_ID')
+            if _g:
+                _masked = (_g[:4] + '...' + _g[-4:]) if len(_g) > 8 else '*****'
+            else:
+                _masked = None
+            app.logger.info('google_signin called: path=%s remote=%s client_id_set=%s token_len=%s',
+                            getattr(request, 'path', None), request.remote_addr, bool(_g), len(raw_token) if raw_token else 0)
+            app.logger.debug('GOOGLE_CLIENT_ID masked=%s', _masked)
+        except Exception:
+            # best-effort logging
+            app.logger.exception('google_signin: logging helper failed')
+        if not raw_token:
+            return jsonify({'error': 'id_token required'}), 400
+
+        audience = os.getenv('GOOGLE_CLIENT_ID')
+        if not audience:
+            return jsonify({'error': 'server_misconfigured', 'detail': 'GOOGLE_CLIENT_ID not set'}), 500
+
+        try:
+            idinfo = google_id_token.verify_oauth2_token(raw_token, google_auth_requests.Request(), audience)
+        except ValueError as ve:
+            return jsonify({'error': 'invalid_google_token', 'detail': str(ve)}), 401
+
+        if not idinfo.get('email_verified'):
+            return jsonify({'error': 'email_not_verified'}), 401
+
+        email = idinfo.get('email')
+        nombre = preferred_name or idinfo.get('name') or email
+        google_sub = idinfo.get('sub')
+        if not email:
+            return jsonify({'error': 'email_required'}), 400
+
+        # Ensure model classes are available regardless of earlier import timing
+        try:
+            from database.database import Usuario, Cliente, Entrenador, db as _db
+        except Exception:
+            # fallback: try importing without Entrenador and log the issue
+            app.logger.exception('failed to import Entrenador model in google_signin; attempting fallback import')
+            from database.database import Usuario, Cliente, db as _db
+
+        user = Usuario.query.filter_by(email=email).first()
+        if not user:
+            user = Usuario(email=email, nombre=nombre, hashed_password='', google_sub=google_sub)
+            _db.session.add(user)
+            _db.session.commit()
+        else:
+            # opcional: actualizar nombre si el usuario proporciona uno nuevo
+            try:
+                if preferred_name and user.nombre != preferred_name:
+                    user.nombre = preferred_name
+                    _db.session.add(user)
+                    _db.session.commit()
+            except Exception:
+                _db.session.rollback()
+
+        # Crear entidad según el rol deseado
+        if desired_role == 'entrenador':
+            row = db.session.execute(text('SELECT 1 FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+            if not row:
+                try:
+                    ent = Entrenador(usuario_id=user.id)
+                    _db.session.add(ent)
+                    _db.session.commit()
+                except Exception:
+                    _db.session.rollback()
+            row_cliente = db.session.execute(text('SELECT 1 FROM clientes WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+            if not row_cliente:
+                try:
+                    cliente = Cliente(usuario_id=user.id)
+                    _db.session.add(cliente)
+                    _db.session.commit()
+                except Exception:
+                    _db.session.rollback()
+        else:
+            # default cliente si no se especifica o se pide cliente
+            row_cliente = db.session.execute(text('SELECT 1 FROM clientes WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+            if not row_cliente:
+                try:
+                    cliente = Cliente(usuario_id=user.id)
+                    _db.session.add(cliente)
+                    _db.session.commit()
+                except Exception:
+                    _db.session.rollback()
+            # crea entrenador sólo si pidió entrenador
+            if desired_role == 'entrenador':
+                row = db.session.execute(text('SELECT 1 FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+                if not row:
+                    try:
+                        ent = Entrenador(usuario_id=user.id)
+                        _db.session.add(ent)
+                        _db.session.commit()
+                    except Exception:
+                        _db.session.rollback()
+
+        ADMIN_EMAIL = os.getenv('ADMIN_EMAIL', 'admin@test.local')
+        role = 'admin' if user.email == ADMIN_EMAIL else 'usuario'
+        if role != 'admin':
+            try:
+                row_ent = db.session.execute(text('SELECT 1 FROM entrenadores WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+                row_cli = db.session.execute(text('SELECT 1 FROM clientes WHERE usuario_id = :uid LIMIT 1'), {'uid': user.id}).fetchone()
+                if desired_role == 'entrenador' and row_ent:
+                    role = 'entrenador'
+                elif desired_role == 'cliente' and row_cli:
+                    role = 'cliente'
+                else:
+                    if row_ent:
+                        role = 'entrenador'
+                    elif row_cli:
+                        role = 'cliente'
+            except Exception:
+                role = getattr(user, '_role_fallback', 'usuario')
+
+        token = generate_token({'user_id': user.id, 'role': role, 'nombre': user.nombre})
+
+        return jsonify({'message': 'ok', 'user_id': user.id, 'role': role, 'nombre': user.nombre, 'token': token}), 200
+    except Exception as e:
+        app.logger.exception('google_signin failed')
         try:
             db.session.rollback()
         except Exception:
