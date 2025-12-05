@@ -190,6 +190,43 @@ def _ensure_cors_headers(response):
         pass
     return response
 
+
+# Explicitly handle OPTIONS for any /api/* path as a robust fallback.
+# Some proxies or deployment environments may not trigger before_request
+# for OPTIONS consistently, so having a dedicated route ensures preflight
+# always returns the necessary CORS headers.
+@app.route('/api/<path:subpath>', methods=['OPTIONS'])
+def _api_options(subpath):
+    from flask import make_response
+    try:
+        resp = make_response(('', 200))
+        origin = request.headers.get('Origin')
+        allowed = cors_origins_config
+        if allowed == '*':
+            resp.headers['Access-Control-Allow-Origin'] = '*'
+        else:
+            try:
+                if isinstance(allowed, (list, tuple)):
+                    if origin and origin in allowed:
+                        resp.headers['Access-Control-Allow-Origin'] = origin
+                    else:
+                        resp.headers['Access-Control-Allow-Origin'] = allowed[0] if allowed else ''
+                else:
+                    resp.headers['Access-Control-Allow-Origin'] = str(allowed)
+            except Exception:
+                resp.headers['Access-Control-Allow-Origin'] = '*'
+
+        if cors_supports_credentials:
+            resp.headers['Access-Control-Allow-Credentials'] = 'true'
+
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        resp.headers['Access-Control-Allow-Headers'] = app.config.get('CORS_HEADERS', 'Content-Type,Authorization')
+        app.logger.debug('Explicit OPTIONS handled for /api/%s from Origin=%s', subpath, origin)
+        return resp
+    except Exception:
+        app.logger.exception('Error while handling explicit OPTIONS for /api/%s', subpath)
+        return ('', 500)
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.auth import generate_token, jwt_required
 from sqlalchemy import text
