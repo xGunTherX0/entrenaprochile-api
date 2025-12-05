@@ -22,6 +22,53 @@ from flask_cors import CORS
 # Inicialización de la aplicación
 app = Flask(__name__)
 
+# WSGI middleware: ensure OPTIONS preflight for /api/* always gets a proper CORS response
+# This runs before Flask routing and helps when a proxy or server configuration causes
+# OPTIONS to not reach Flask or to be handled differently.
+def _options_preflight_middleware(app_wsgi):
+    def middleware(environ, start_response):
+        try:
+            method = environ.get('REQUEST_METHOD', '')
+            path = environ.get('PATH_INFO', '')
+            if method == 'OPTIONS' and path.startswith('/api/'):
+                # Build simple preflight response
+                status = '200 OK'
+                headers = [
+                    ('Content-Type', 'text/plain'),
+                ]
+                # Determine allowed origin from configured cors_origins_config if possible
+                try:
+                    allowed = cors_origins_config
+                    # default to wildcard
+                    allow_origin = '*'
+                    if allowed != '*':
+                        if isinstance(allowed, (list, tuple)):
+                            # We cannot inspect the Origin header here reliably, so expose first
+                            allow_origin = allowed[0] if allowed else '*'
+                        else:
+                            allow_origin = str(allowed)
+                    headers.append(('Access-Control-Allow-Origin', allow_origin))
+                except Exception:
+                    headers.append(('Access-Control-Allow-Origin', '*'))
+                if cors_supports_credentials:
+                    headers.append(('Access-Control-Allow-Credentials', 'true'))
+                headers.append(('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'))
+                headers.append(('Access-Control-Allow-Headers', app.config.get('CORS_HEADERS', 'Content-Type,Authorization')))
+                start_response(status, headers)
+                return [b'']
+        except Exception:
+            # don't fail startup; log if possible
+            try:
+                import logging
+                logging.getLogger('app').exception('options_preflight_middleware error')
+            except Exception:
+                pass
+        return app_wsgi(environ, start_response)
+    return middleware
+
+# Wrap the Flask WSGI app with the middleware
+app.wsgi_app = _options_preflight_middleware(app.wsgi_app)
+
 # Global JSON error handler: return JSON for unhandled exceptions so the frontend
 # receives a machine-readable error (detailed in development, generic in prod).
 @app.errorhandler(Exception)
