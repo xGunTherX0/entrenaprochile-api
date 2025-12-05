@@ -8,9 +8,11 @@
   port = 5173
 
 [context.production.environment]
-  VITE_GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"
-  VITE_API_URL = "https://your-backend.onrender.com"
-  VITE_ADMIN_EMAIL = "admin@example.com"
+  # Environment variables should be configured in Netlify UI (Site settings → Build & deploy → Environment).
+  # Do NOT store secrets (client IDs or API keys) directly in the repo. Set the following variables in Netlify:
+  # - VITE_GOOGLE_CLIENT_ID
+  # - VITE_API_URL
+  # - VITE_ADMIN_EMAIL
 
 [[redirects]]
   from = "/*"
