@@ -618,9 +618,21 @@ def google_signin():
 
         user = Usuario.query.filter_by(email=email).first()
         if not user:
-            user = Usuario(email=email, nombre=nombre, hashed_password='', google_sub=google_sub)
+            # Create the user without passing unknown keyword arguments (some DBs lack google_sub column)
+            user = Usuario(email=email, nombre=nombre, hashed_password='')
             _db.session.add(user)
             _db.session.commit()
+            # Attempt to set google_sub if the model/table supports it (be defensive)
+            try:
+                if google_sub:
+                    setattr(user, 'google_sub', google_sub)
+                    _db.session.add(user)
+                    _db.session.commit()
+            except Exception:
+                try:
+                    _db.session.rollback()
+                except Exception:
+                    pass
         else:
             # opcional: actualizar nombre si el usuario proporciona uno nuevo
             try:
@@ -628,6 +640,14 @@ def google_signin():
                     user.nombre = preferred_name
                     _db.session.add(user)
                     _db.session.commit()
+                # If the DB has a google_sub column, ensure it's stored/updated
+                try:
+                    if google_sub and not getattr(user, 'google_sub', None):
+                        setattr(user, 'google_sub', google_sub)
+                        _db.session.add(user)
+                        _db.session.commit()
+                except Exception:
+                    _db.session.rollback()
             except Exception:
                 _db.session.rollback()
 
