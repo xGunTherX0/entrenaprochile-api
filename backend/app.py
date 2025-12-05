@@ -3040,50 +3040,51 @@ def admin_delete_usuario(usuario_id):
                 # will roll back and a descriptive error will be returned.
                 entrenador = _safe_entrenador_by_usuario_id(user.id)
 
-                # Use a nested transaction (SAVEPOINT) if a transaction is already active
-                # to avoid "A transaction is already begun on this Session" errors.
-                if getattr(db.session, 'in_transaction', None) and db.session.in_transaction():
-                    tx_ctx = db.session.begin_nested()
-                else:
-                    tx_ctx = db.session.begin()
-
-                with tx_ctx:
+                # Use a robust engine-level transaction to avoid conflicting Session
+                # transactions in the app environment (this avoids SQLAlchemy
+                # "A transaction is already begun on this Session." errors).
+                with db.engine.begin() as conn:
                     # If entrenador exists, remove related content using subqueries so
-                    # we don't need to pass Python lists into SQL parameters (Postgres
-                    # array handling caused issues previously).
+                    # we don't need to pass Python lists into SQL parameters.
                     if entrenador:
                         ent_id = entrenador.id
 
                         # Remove solicitudes that reference plans or rutinas owned by this entrenador
-                        db.session.execute(text("DELETE FROM solicitudes_plan WHERE plan_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)"), {'eid': ent_id})
-                        db.session.execute(text("DELETE FROM solicitudes_plan WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        conn.execute(text("DELETE FROM solicitudes_plan WHERE plan_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        conn.execute(text("DELETE FROM solicitudes_plan WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
 
                         # Remove cliente_rutina entries referring to rutinas owned by this entrenador
-                        db.session.execute(text("DELETE FROM cliente_rutina WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        conn.execute(text("DELETE FROM cliente_rutina WHERE rutina_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
 
                         # Remove content reviews for plans and rutinas owned by this entrenador
-                        db.session.execute(text("DELETE FROM content_review WHERE tipo = 'plan' AND content_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)"), {'eid': ent_id})
-                        db.session.execute(text("DELETE FROM content_review WHERE tipo = 'rutina' AND content_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        conn.execute(text("DELETE FROM content_review WHERE tipo = 'plan' AND content_id IN (SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid)"), {'eid': ent_id})
+                        conn.execute(text("DELETE FROM content_review WHERE tipo = 'rutina' AND content_id IN (SELECT id FROM rutinas WHERE entrenador_id = :eid)"), {'eid': ent_id})
 
                         # Delete the actual content rows (plans and rutinas)
-                        db.session.execute(text('DELETE FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id})
-                        db.session.execute(text('DELETE FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id})
+                        conn.execute(text('DELETE FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id})
+                        conn.execute(text('DELETE FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id})
 
                         # Delete entrenador row
-                        db.session.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
+                        conn.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
 
                     # Remove any solicitudes or cliente_rutina that reference this user's cliente rows
-                    db.session.execute(text("DELETE FROM solicitudes_plan WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)"), {'uid': user.id})
-                    db.session.execute(text("DELETE FROM cliente_rutina WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)"), {'uid': user.id})
+                    conn.execute(text("DELETE FROM solicitudes_plan WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)"), {'uid': user.id})
+                    conn.execute(text("DELETE FROM cliente_rutina WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)"), {'uid': user.id})
 
                     # delete cliente row if exists (raw DELETE to avoid ORM cascade/UPDATE)
-                    db.session.execute(text('DELETE FROM clientes WHERE usuario_id = :uid'), {'uid': user.id})
+                    conn.execute(text('DELETE FROM clientes WHERE usuario_id = :uid'), {'uid': user.id})
 
                     # Remove any password reset tokens referencing this usuario (FK -> usuarios.id)
-                    db.session.execute(text('DELETE FROM password_reset_tokens WHERE usuario_id = :uid'), {'uid': user.id})
+                    conn.execute(text('DELETE FROM password_reset_tokens WHERE usuario_id = :uid'), {'uid': user.id})
 
                     # finally delete the user row with raw SQL to avoid ORM side-effects
-                    db.session.execute(text('DELETE FROM usuarios WHERE id = :uid'), {'uid': user.id})
+                    conn.execute(text('DELETE FROM usuarios WHERE id = :uid'), {'uid': user.id})
+
+                # Expire the session identity map so further ORM queries see DB changes
+                try:
+                    db.session.expire_all()
+                except Exception:
+                    pass
 
                 # If we reach here the transaction committed
                 return jsonify({'message': 'usuario eliminado (hard)'}), 200
