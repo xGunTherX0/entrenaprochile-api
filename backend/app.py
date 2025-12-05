@@ -215,20 +215,6 @@ def _ensure_cors_headers(response):
     try:
         # Only modify API responses
         if request.path and request.path.startswith('/api/'):
-            # Temporary emergency override: allow all origins to diagnose CORS issues.
-            # This is intentionally permissive and should be reverted once the
-            # root cause is fixed in Render/CF configuration.
-            try:
-                response.headers.setdefault('Access-Control-Allow-Origin', '*')
-                if cors_supports_credentials:
-                    response.headers.setdefault('Access-Control-Allow-Credentials', 'true')
-                response.headers.setdefault('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-                response.headers.setdefault('Access-Control-Allow-Headers', app.config.get('CORS_HEADERS', 'Content-Type,Authorization'))
-                app.logger.debug('Emergency CORS override applied for %s', request.path)
-                return response
-            except Exception:
-                app.logger.exception('Emergency CORS override failed')
-                # fall through to normal logic
             origin = request.headers.get('Origin')
             # Determine allowed origin value
             allowed = cors_origins_config
@@ -3044,82 +3030,54 @@ def admin_delete_usuario(usuario_id):
         # Hard delete: remove user and all owned content
         if mode == 'hard':
             try:
-                # Use explicit raw DELETE statements in a safe order to avoid
-                # SQLAlchemy ORM emitting UPDATEs that set FKs to NULL.
-                # Order: remove solicitudes_plan referencing this entrenador's
-                # plans/rutinas, remove cliente_rutina entries, remove plans
-                # and rutinas, remove trainer and client rows, then remove user.
+                # Run the hard-delete in a single transaction and don't swallow
+                # intermediate errors. If anything fails, the whole operation
+                # will roll back and a descriptive error will be returned.
                 entrenador = _safe_entrenador_by_usuario_id(user.id)
 
-                # If entrenador exists, remove related content using raw SQL
-                if entrenador:
-                    ent_id = entrenador.id
-                    # collect plan and rutina ids (use raw selects to be tolerant)
-                    try:
+                with db.session.begin():
+                    # If entrenador exists, remove related content using raw SQL
+                    if entrenador:
+                        ent_id = entrenador.id
+                        # collect plan and rutina ids
                         plan_rows = db.session.execute(text('SELECT id FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id}).fetchall()
                         plan_ids = [r[0] for r in plan_rows] if plan_rows else []
-                    except Exception:
-                        plan_ids = []
-                    try:
                         rutina_rows = db.session.execute(text('SELECT id FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id}).fetchall()
                         rutina_ids = [r[0] for r in rutina_rows] if rutina_rows else []
-                    except Exception:
-                        rutina_ids = []
 
-                    # delete solicitudes referencing plans and rutinas
-                    try:
+                        # delete solicitudes referencing plans and rutinas
                         if plan_ids:
                             db.session.execute(text('DELETE FROM solicitudes_plan WHERE plan_id = ANY(:pids)'), {'pids': plan_ids})
                         if rutina_ids:
                             db.session.execute(text('DELETE FROM solicitudes_plan WHERE rutina_id = ANY(:rids)'), {'rids': rutina_ids})
-                    except Exception:
-                        db.session.rollback()
 
-                    # delete any cliente_rutina mappings for these rutinas
-                    try:
+                        # delete any cliente_rutina mappings for these rutinas
                         if rutina_ids:
                             db.session.execute(text('DELETE FROM cliente_rutina WHERE rutina_id = ANY(:rids)'), {'rids': rutina_ids})
-                    except Exception:
-                        db.session.rollback()
 
-                    # delete content rows (plans and rutinas)
-                    try:
+                        # delete content rows (plans and rutinas)
                         db.session.execute(text('DELETE FROM planes_alimenticios WHERE entrenador_id = :eid'), {'eid': ent_id})
                         db.session.execute(text('DELETE FROM rutinas WHERE entrenador_id = :eid'), {'eid': ent_id})
-                    except Exception:
-                        db.session.rollback()
 
-                    # delete any content_review rows for removed content
-                    try:
+                        # delete any content_review rows for removed content
                         if plan_ids:
                             db.session.execute(text("DELETE FROM content_review WHERE tipo = 'plan' AND content_id = ANY(:pids)"), {'pids': plan_ids})
                         if rutina_ids:
                             db.session.execute(text("DELETE FROM content_review WHERE tipo = 'rutina' AND content_id = ANY(:rids)"), {'rids': rutina_ids})
-                    except Exception:
-                        db.session.rollback()
 
-                    # delete entrenador row
-                    try:
+                        # delete entrenador row
                         db.session.execute(text('DELETE FROM entrenadores WHERE usuario_id = :uid'), {'uid': user.id})
-                    except Exception:
-                        db.session.rollback()
 
-                # delete cliente row if exists (raw DELETE to avoid ORM cascade/UPDATE)
-                try:
+                    # delete cliente row if exists (raw DELETE to avoid ORM cascade/UPDATE)
                     db.session.execute(text('DELETE FROM clientes WHERE usuario_id = :uid'), {'uid': user.id})
-                except Exception:
-                    db.session.rollback()
 
-                # finally delete the user row with raw SQL to avoid ORM side-effects
-                try:
+                    # finally delete the user row with raw SQL to avoid ORM side-effects
                     db.session.execute(text('DELETE FROM usuarios WHERE id = :uid'), {'uid': user.id})
-                    db.session.commit()
-                    return jsonify({'message': 'usuario eliminado (hard)'}), 200
-                except Exception as e:
-                    db.session.rollback()
-                    raise
+
+                # If we reach here the transaction committed
+                return jsonify({'message': 'usuario eliminado (hard)'}), 200
             except Exception as e:
-                db.session.rollback()
+                # Transaction will be rolled back automatically by session.begin() on exception
                 app.logger.exception('admin_delete_usuario hard delete failed')
                 return jsonify({'error': 'db error', 'detail': str(e)}), 500
 
