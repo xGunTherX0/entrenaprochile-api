@@ -3061,6 +3061,8 @@ def admin_delete_usuario(usuario_id):
                 statements.extend([
                     ("DELETE FROM solicitudes_plan WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)", {'uid': user.id}),
                     ("DELETE FROM cliente_rutina WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)", {'uid': user.id}),
+                    # Remove measurements and other client-owned rows before deleting cliente
+                    ("DELETE FROM mediciones WHERE cliente_id IN (SELECT id FROM clientes WHERE usuario_id = :uid)", {'uid': user.id}),
                     ("DELETE FROM clientes WHERE usuario_id = :uid", {'uid': user.id}),
                     ("DELETE FROM password_reset_tokens WHERE usuario_id = :uid", {'uid': user.id}),
                     ("DELETE FROM usuarios WHERE id = :uid", {'uid': user.id}),
